@@ -1,2 +1,3 @@
-# archetypes
-Collection of archetypal analysis algorithms.
+# Archetypal Analysis
+
+https://scikit-learn.org/stable/developers/develop.html
