@@ -1,7 +1,7 @@
 # Archetypes
-
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+![PyPI](https://img.shields.io/pypi/v/archetypes)
 ![PyPI - License](https://img.shields.io/pypi/l/archetypes)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 **archetypes** is a [scikit-learn](https://scikit-learn.org) compatible Python package for archetypal analysis.
 
