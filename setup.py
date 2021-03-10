@@ -17,7 +17,6 @@ Programming Language :: Python
 Topic :: Software Development :: Libraries :: Python Modules
 """
 
-
 setup(
     name="archetypes",
     description="A scikit-learn compatible Python package for archetypal analysis.",
