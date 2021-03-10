@@ -1,6 +1,6 @@
 # Releasing
 
-* Check that `setup.py` contains the correct version number.
+* Check that `archetypes/_version.py` contains the correct version number.
 
 * Commit the changes:
   

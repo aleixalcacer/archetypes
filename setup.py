@@ -1,5 +1,10 @@
 from setuptools import setup
+import os
 
+
+ver_file = os.path.join('archetypes', '_version.py')
+with open(ver_file) as f:
+    exec(f.read())
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
@@ -19,7 +24,7 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     license="BSD (3-clause)",
-    version="0.0.3.dev0",
+    version=__version__,
     author="Aleix Alcacer",
     author_email="aleixalcacer@gmail.com",
     url="https://github.com/aleixalcacer/archetypes",
