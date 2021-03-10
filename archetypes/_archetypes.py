@@ -1,5 +1,5 @@
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils.validation import check_is_fitted, check_random_state, check_array
+from sklearn.utils.validation import check_is_fitted, check_random_state
 import numpy as np
 from math import inf
 from scipy.optimize import nnls
@@ -114,4 +114,3 @@ class AA(BaseEstimator, TransformerMixin):
 
     def fit_transform(self, X, y=None, **fit_params):
         return self.fit(X, y, **fit_params).transform(X)
-
