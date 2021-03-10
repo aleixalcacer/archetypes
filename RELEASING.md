@@ -15,8 +15,8 @@
 
 * Create a release on https://github.com/aleixalcacer/archetypes/releases.
   
-* Edit the version number in `setup.py` to increment the version to the next
-  minor one (i.e. `X.Y.Z` -> `X.Y.(Z+1).dev0`).
+* Edit the version number in `archetypes/_version.py` to increment the version
+  to the next minor one (i.e. `X.Y.Z` -> `X.Y.(Z+1).dev0`).
 
 * Commit your changes with:
 
