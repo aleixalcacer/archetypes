@@ -19,7 +19,7 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     license="BSD (3-clause)",
-    version="0.0.1.dev0",
+    version="0.0.1",
     author="Aleix Alcacer",
     author_email="aleixalcacer@gmail.com",
     url="https://github.com/aleixalcacer/archetypes",
