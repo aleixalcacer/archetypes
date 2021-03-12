@@ -1,5 +1,7 @@
 # Archetypes
 ![PyPI](https://img.shields.io/pypi/v/archetypes)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/archetypes)
+[![Python package](https://github.com/aleixalcacer/archetypes/actions/workflows/python-package.yml/badge.svg)](https://github.com/aleixalcacer/archetypes/actions/workflows/python-package.yml)
 ![PyPI - License](https://img.shields.io/pypi/l/archetypes)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
