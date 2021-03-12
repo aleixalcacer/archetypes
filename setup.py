@@ -7,14 +7,17 @@ with open(ver_file) as f:
     exec(f.read())
 
 CLASSIFIERS = """\
-Development Status :: 5 - Production/Stable
-Environment :: Console
+Development Status :: 4 - Beta
 Intended Audience :: Developers
+Intended Audience :: Science/Research
 License :: OSI Approved :: BSD License
 Natural Language :: English
 Operating System :: OS Independent
 Programming Language :: Python
-Topic :: Software Development :: Libraries :: Python Modules
+Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
+Topic :: Scientific/Engineering
 """
 
 setup(
