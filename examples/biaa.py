@@ -1,16 +1,24 @@
 import archetypes as arch
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.datasets import make_checkerboard
 
-shape = (200, 20)
 random_state = np.random.RandomState(0)
 
-# Generate some random data
-X = random_state.normal(0, 1, shape)
-plt.plot(X[:, 0], X[:, 1], '.')
+n_clusters = (2, 2)
+data, rows, columns = make_checkerboard(shape=(200, 200),
+                                        n_clusters=n_clusters,
+                                        shuffle=False,
+                                        noise=10,
+                                        random_state=random_state)
 
-# Create an AA estimator and fit it
-biaa = arch.BiAA(k=2, c=2, n_init=5, max_iter=1000, random_state=random_state)
-biaa.fit(X)
+plt.matshow(data, cmap=plt.cm.Blues)
+plt.title("Original dataset")
 
-print(biaa.archetypes_)
+
+model = arch.BiAA(n_archetypes=(2, 2), random_state=0)
+model.fit(data)
+
+
+plt.show()
+plt.close()
