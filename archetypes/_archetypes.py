@@ -6,6 +6,7 @@ from scipy.optimize import nnls
 
 
 def _optimize_alphas(X, Z):
+    print("alphas", X.shape, Z.shape)
     alphas = np.empty((X.shape[0], Z.shape[0]))
     for i in range(alphas.T.shape[1]):
         alphas.T[:, i], _ = nnls(Z.T, X.T[:, i])
@@ -13,12 +14,13 @@ def _optimize_alphas(X, Z):
 
 
 def _optimize_betas(X, Z):
+    print("betas")
     return _optimize_alphas(Z, X)
 
 
-def _aa_simple(X, archetypes, max_iter, tol):
+def _aa_simple(X, betas, max_iter, tol):
+    Z = betas @ X
     X = np.column_stack((X, np.full((X.shape[0],), 200)))
-    Z = archetypes
     Z = np.column_stack((Z, np.full((Z.shape[0],), 200)))
 
     rss_0 = inf
@@ -75,10 +77,12 @@ class AA(BaseEstimator, TransformerMixin):
         if not isinstance(self.verbose, bool):
             raise TypeError
 
-    def _init_archetypes(self, X, n_archetypes, random_state):
+    def _init_betas(self, X, n_archetypes, random_state):
         ind = random_state.choice(X.shape[0], n_archetypes)
-        archetypes = X[ind, :]
-        return archetypes
+        betas = np.zeros((n_archetypes, X.shape[0]), dtype=np.float64)
+        for i, j in enumerate(ind):
+            betas[i, j] = 1
+        return betas
 
     def fit(self, X, y=None, **fit_params):
         X = self._validate_data(X, dtype=[np.float64, np.float32])
@@ -88,9 +92,10 @@ class AA(BaseEstimator, TransformerMixin):
 
         self.inertia_ = inf
         for i in range(self.n_init):
-            archetypes = self._init_archetypes(X, self.n_archetypes, random_state)
+            initial_betas = self._init_betas(X, self.n_archetypes, random_state)
+
             alphas, betas, inertia, Z, n_iter = _aa_simple(
-                X, archetypes, self.max_iter, self.tol)
+                X, initial_betas, self.max_iter, self.tol)
 
             if inertia < self.inertia_:
                 self.alphas_ = alphas
