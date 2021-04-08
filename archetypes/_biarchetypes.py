@@ -4,11 +4,6 @@ import numpy as np
 from math import inf
 from scipy.optimize import nnls
 
-def _optimize_alphas(X, Z):
-    alphas = np.empty((X.shape[0], Z.shape[0]))
-    for i in range(alphas.T.shape[1]):
-        alphas.T[:, i], _ = nnls(Z.T, X.T[:, i])
-    return alphas
 
 def _optimize_alphas(B, A):
     B = np.pad(B, ((0, 0), (0, 1)), 'constant', constant_values=200)
@@ -19,6 +14,7 @@ def _optimize_alphas(B, A):
         alphas.T[:, j], _ = nnls(A.T, B.T[:, j])
 
     return alphas
+
 
 def _optimize_betas(B, A):
     return _optimize_alphas(B, A)
@@ -31,6 +27,7 @@ def _optimize_gammas(B, A):
     for j in range(gammas.shape[1]):
         gammas[:, j], _ = nnls(A, B[:, j])
     return gammas
+
 
 def _optimize_thetas(B, A):
     return _optimize_gammas(B, A)
@@ -63,10 +60,9 @@ def _biaa_simple(X, init_alphas, init_betas, init_gammas, init_thetas, max_iter,
 
 
 class BiAA(BaseEstimator, TransformerMixin):
-    def __init__(self, k=4, c=3, n_init=5, max_iter=300, tol=1e-4, verbose=True,
+    def __init__(self, n_archetypes=(3, 2), n_init=5, max_iter=300, tol=1e-4, verbose=True,
                  random_state=None):
-        self.k = k
-        self.c = c
+        self.n_archetypes = n_archetypes
         self.max_iter = max_iter
         self.tol = tol
         self.n_init = n_init
@@ -74,25 +70,27 @@ class BiAA(BaseEstimator, TransformerMixin):
         self.random_state = random_state
 
     def _check_data(self, X):
-        if X.shape[0] < self.k:
+        if X.shape[0] < self.n_archetypes[0]:
             raise ValueError(
-                f"n_samples={X.shape[0]} should be >= n_clusters={self.k}."
+                f"n_samples={X.shape[0]} should be >= n_archetypes={self.n_archetypes[1]}."
             )
-        if X.shape[1] < self.c:
+        if X.shape[1] < self.n_archetypes[1]:
             raise ValueError(
-                f"n_samples={X.shape[1]} should be >= n_clusters={self.c}."
+                f"n_samples={X.shape[1]} should be >= n_archetypes={self.n_archetypes[1]}."
             )
 
     def _check_parameters(self):
-        if not isinstance(self.k, int):
+        if not isinstance(self.n_archetypes[0], int):
             raise TypeError
-        if self.k <= 0:
+        if self.n_archetypes[0] <= 0:
             raise ValueError(
-                f"c should be > 0, got {self.k} instead."
+                f"n_archetypes[0] should be > 0, got {self.n_archetypes[0]} instead."
             )
-        if self.c <= 0:
+        if not isinstance(self.n_archetypes[1], int):
+            raise TypeError
+        if self.n_archetypes[1] <= 0:
             raise ValueError(
-                f"c should be > 0, got {self.k} instead."
+                f"n_archetypes[1] should be > 0, got {self.n_archetypes[1]} instead."
             )
 
         if not isinstance(self.max_iter, int):
@@ -112,24 +110,24 @@ class BiAA(BaseEstimator, TransformerMixin):
         if not isinstance(self.verbose, bool):
             raise TypeError
 
-    def _init_coefs(self, X, k, c, random_state):
-        ind = random_state.choice(X.shape[0], k)
-        betas = np.zeros((k, X.shape[0]), dtype=np.float64)
+    def _init_coefs(self, X, random_state):
+        ind = random_state.choice(X.shape[0], self.n_archetypes[0])
+        betas = np.zeros((self.n_archetypes[0], X.shape[0]), dtype=np.float64)
         for i, j in enumerate(ind):
             betas[i, j] = 1
 
-        ind = random_state.choice(X.shape[1], c)
-        thetas = np.zeros((X.shape[1], c), dtype=np.float64)
+        ind = random_state.choice(X.shape[1], self.n_archetypes[1])
+        thetas = np.zeros((X.shape[1], self.n_archetypes[1]), dtype=np.float64)
         for j, i in enumerate(ind):
             thetas[i, j] = 1
 
-        ind = random_state.choice(k, X.shape[0])
-        alphas = np.zeros((X.shape[0], k), dtype=np.float64)
+        ind = random_state.choice(self.n_archetypes[0], X.shape[0])
+        alphas = np.zeros((X.shape[0], self.n_archetypes[0]), dtype=np.float64)
         for i, j in enumerate(ind):
             alphas[i, j] = 1
 
-        ind = random_state.choice(c, X.shape[1])
-        gammas = np.zeros((c, X.shape[1]), dtype=np.float64)
+        ind = random_state.choice(self.n_archetypes[1], X.shape[1])
+        gammas = np.zeros((self.n_archetypes[1], X.shape[1]), dtype=np.float64)
         for j, i in enumerate(ind):
             gammas[i, j] = 1
 
@@ -141,22 +139,22 @@ class BiAA(BaseEstimator, TransformerMixin):
         self._check_data(X)
         random_state = check_random_state(self.random_state)
 
-        self.inertia_ = inf
+        self.rss_ = inf
         for i in range(self.n_init):
-            i_alphas, i_betas, i_gammas, i_thetas = self._init_coefs(X, self.k, self.c, random_state)
+            i_alphas, i_betas, i_gammas, i_thetas = self._init_coefs(X, random_state)
 
-            alphas, betas, gammas, thetas, inertia, Z, n_iter = _biaa_simple(
+            alphas, betas, gammas, thetas, rss, Z, n_iter = _biaa_simple(
                 X, i_alphas, i_betas, i_gammas, i_thetas,
                 self.max_iter, self.tol)
 
-            if inertia < self.inertia_:
+            if rss < self.rss_:
                 self.alphas_ = alphas
                 self.betas_ = betas
                 self.gammas_ = gammas
                 self.thetas_ = thetas
                 self.archetypes_ = Z
                 self.n_iter_ = n_iter
-                self.inertia_ = inertia
+                self.rss_ = rss
 
         return self
 
