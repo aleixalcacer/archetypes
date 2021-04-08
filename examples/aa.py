@@ -2,7 +2,7 @@ import archetypes as arch
 import numpy as np
 import matplotlib.pyplot as plt
 
-shape = (200, 2)
+shape = (200, 20)
 random_state = np.random.RandomState(0)
 
 # Generate some random data
