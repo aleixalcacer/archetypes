@@ -2,7 +2,7 @@ import pytest
 
 from sklearn.utils.estimator_checks import check_estimator
 
-from archetypes import AA
+from archetypes import AA, BiAA
 
 
 @pytest.mark.parametrize(
@@ -10,7 +10,7 @@ from archetypes import AA
         AA,
         # BiAA,
     ]
-
 )
+
 def test_all_estimators(Estimator):
     return check_estimator(Estimator())
