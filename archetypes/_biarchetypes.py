@@ -11,7 +11,9 @@ def _optimize_alphas(B, A):
     alphas = np.empty((B.shape[0], A.shape[0]))
     for j in range(alphas.T.shape[1]):
         alphas.T[:, j], _ = nnls(A.T, B.T[:, j])
+
     alphas /= alphas.sum(1)[:, None]
+    alphas[np.isnan(alphas)] = 1 / alphas.shape[1]
     return alphas
 
 
@@ -26,8 +28,9 @@ def _optimize_gammas(B, A):
     gammas = np.empty((A.shape[1], B.shape[1]))
     for j in range(gammas.shape[1]):
         gammas[:, j], _ = nnls(A, B[:, j])
+
     gammas /= gammas.sum(0)[None, :]
-    print(gammas)
+    gammas[np.isnan(gammas)] = 1 / gammas.shape[0]
     return gammas
 
 

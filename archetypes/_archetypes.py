@@ -12,6 +12,7 @@ def _optimize_alphas(B, A):
     for j in range(alphas.T.shape[1]):
         alphas.T[:, j], _ = nnls(A.T, B.T[:, j])
     alphas /= alphas.sum(1)[:, None]
+    alphas[np.isnan(alphas)] = 1 / alphas.shape[1]
     return alphas
 
 def _optimize_betas(B, A):
