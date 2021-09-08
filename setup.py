@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 
 
-ver_file = os.path.join('archetypes', '_version.py')
+ver_file = os.path.join('archetypes', 'version.py')
 with open(ver_file) as f:
     exec(f.read())
 

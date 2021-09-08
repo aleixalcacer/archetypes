@@ -1,6 +1,6 @@
 # Releasing
 
-* Check that `archetypes/_version.py` contains the correct version number.
+* Check that `archetypes/version.py` contains the correct version number.
 
 * Commit the changes:
   
@@ -15,7 +15,7 @@
 
 * Create a release on https://github.com/aleixalcacer/archetypes/releases.
   
-* Edit the version number in `archetypes/_version.py` to increment the version
+* Edit the version number in `archetypes/version.py` to increment the version
   to the next minor one (i.e. `X.Y.Z` -> `X.Y.(Z+1).dev0`).
 
 * Commit your changes with:

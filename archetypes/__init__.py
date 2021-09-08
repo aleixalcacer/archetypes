@@ -1,4 +1,4 @@
-from ._archetypes import AA
-from ._biarchetypes import BiAA
+from .archetypes import AA
+from .biarchetypes import BiAA
 
-from ._version import __version__
+from .version import __version__
