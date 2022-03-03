@@ -19,7 +19,7 @@ def _optimize_betas(B, A):
     return _optimize_alphas(B, A)
 
 
-def _aa_simple(X, i_alphas, i_betas, max_iter, tol):
+def _aa_simple(X, i_alphas, i_betas, max_iter, tol, verbose=False):
     alphas = i_alphas
     betas = i_betas
 
@@ -27,6 +27,10 @@ def _aa_simple(X, i_alphas, i_betas, max_iter, tol):
 
     rss_0 = inf
     for n_iter in range(max_iter):
+        if verbose:
+            if n_iter % 100 == 0:
+                print(f"    Iteration: {n_iter + 1:{len(str(max_iter))}}, RSS: {rss_0:.2f}")
+
         alphas = _optimize_alphas(X, Z)
         Z = np.linalg.pinv(alphas) @ X
         betas = _optimize_betas(Z, X)
@@ -40,7 +44,7 @@ def _aa_simple(X, i_alphas, i_betas, max_iter, tol):
 
 
 class AA(BaseEstimator, TransformerMixin):
-    def __init__(self, n_archetypes=4, n_init=5, max_iter=300, tol=1e-4, verbose=True, random_state=None):
+    def __init__(self, n_archetypes=4, n_init=5, max_iter=300, tol=1e-4, verbose=False, random_state=None):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
         self.tol = tol
@@ -100,10 +104,13 @@ class AA(BaseEstimator, TransformerMixin):
 
         self.rss_ = inf
         for i in range(self.n_init):
+            if self.verbose:
+                print(f"Initialization {i + 1:{len(str(self.n_init))}}/{self.n_init}")
+
             i_alphas, i_betas = self._init_coefs(X, random_state)
 
             alphas, betas, rss, Z, n_iter = _aa_simple(
-                X, i_alphas, i_betas, self.max_iter, self.tol)
+                X, i_alphas, i_betas, self.max_iter, self.tol, self.verbose)
 
             if rss < self.rss_:
                 self.alphas_ = alphas

@@ -10,8 +10,9 @@ X = random_state.normal(0, 1, shape)
 plt.plot(X[:, 0], X[:, 1], '.')
 
 # Create an AA estimator and fit it
-aa = arch.AA(n_archetypes=5, n_init=10, max_iter=1000, random_state=random_state)
+aa = arch.AA(n_archetypes=5, n_init=10, max_iter=1000, tol=1e-16, random_state=random_state)
 aa.fit(X)
+print(aa.rss_)
 
 plt.plot(aa.archetypes_[:, 0], aa.archetypes_[:, 1], 'x')
 
