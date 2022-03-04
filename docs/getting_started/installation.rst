@@ -1,9 +1,9 @@
 Installation
 ============
-You can install Archetypes via PyPI using Pip or clone the GitHub repository.
+You can install Archetypes via PyPI or cloning the GitHub repository.
 
-Pip
-+++
+Pip (PyPI)
+++++++++++
 
 .. code-block::
 
