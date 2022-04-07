@@ -3,7 +3,8 @@ from sklearn.utils.validation import check_is_fitted, check_random_state
 import numpy as np
 from math import inf
 from scipy.optimize import nnls
-
+from .furthest_sum import furthest_sum
+import warnings
 
 def _optimize_alphas(B, A):
     B = np.pad(B, ((0, 0), (0, 1)), 'constant', constant_values=200)
@@ -72,13 +73,16 @@ class AA(BaseEstimator, TransformerMixin):
 
 
     """
-    def __init__(self, n_archetypes=4, n_init=5, max_iter=300, tol=1e-4, verbose=False, random_state=None):
+    def __init__(self, n_archetypes=4, n_init=1, max_iter=300, tol=1e-4, algorithm_init="auto", verbose=False,
+                 random_state=None):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
         self.tol = tol
         self.n_init = n_init
         self.verbose = verbose
         self.random_state = random_state
+        self.algorithm_init = algorithm_init
+
 
     def _check_data(self, X):
         if X.shape[0] < self.n_archetypes:
@@ -107,6 +111,27 @@ class AA(BaseEstimator, TransformerMixin):
             raise ValueError(
                 f"n_int should be > 0, got {self.n_init} instead."
             )
+        self._n_init = self.n_init
+
+        if not isinstance(self.algorithm_init, str):
+            raise TypeError
+        algorithm_init_names = ["auto", "random", "furthest_sum"]
+        if self.algorithm_init not in algorithm_init_names:
+            raise ValueError(
+                f"algorithm_init must be one of {algorithm_init_names}, "
+                f"got {self.algorithm_init} instead."
+            )
+        self._algorithm_init = self.algorithm_init
+
+        if self._algorithm_init == "auto":
+            self._algorithm_init = "furthest_sum"
+        if self._algorithm_init == "furthest_sum" and self.n_init > 1:
+            warnings.warn(
+                "algorithm_init='furthest_sum' doesn't make sense for a multiple "
+                "initializations. Using n_init=1 instead.",
+                RuntimeWarning,
+            )
+            self._n_init = 1
 
         if not isinstance(self.verbose, bool):
             raise TypeError
@@ -117,8 +142,11 @@ class AA(BaseEstimator, TransformerMixin):
         for i, j in enumerate(ind):
             alphas[i, j] = 1
 
-        ind = random_state.choice(X.shape[0], self.n_archetypes)
         betas = np.zeros((self.n_archetypes, X.shape[0]), dtype=np.float64)
+        if self._algorithm_init == "random":
+            ind = random_state.choice(X.shape[0], self.n_archetypes)
+        else:
+            ind = furthest_sum(X.T, self.n_archetypes, random_state)
         for i, j in enumerate(ind):
             betas[i, j] = 1
 
@@ -150,9 +178,9 @@ class AA(BaseEstimator, TransformerMixin):
         random_state = check_random_state(self.random_state)
 
         self.rss_ = inf
-        for i in range(self.n_init):
+        for i in range(self._n_init):
             if self.verbose:
-                print(f"Initialization {i + 1:{len(str(self.n_init))}}/{self.n_init}")
+                print(f"Initialization {i + 1:{len(str(self._n_init))}}/{self._n_init}")
 
             i_alphas, i_betas = self._init_coefs(X, random_state)
 
