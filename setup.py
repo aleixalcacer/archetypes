@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import os
 
 
@@ -30,7 +30,7 @@ setup(
     author="Aleix Alcacer",
     author_email="aleixalcacer@gmail.com",
     url="https://github.com/aleixalcacer/archetypes",
-    packages=["archetypes"],
+    packages=find_packages(),
     install_requires=["scikit-learn", "numpy", "scipy"],
     python_requires=">=3.7",
     classifiers=list(filter(None, CLASSIFIERS.split("\n"))),
