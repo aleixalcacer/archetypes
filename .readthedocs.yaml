@@ -20,3 +20,4 @@ python:
    install:
      - requirements: requirements.txt
      - requirements: docs/requirements.txt
+     - requirements: docs/getting_started/examples/requirements.txt
