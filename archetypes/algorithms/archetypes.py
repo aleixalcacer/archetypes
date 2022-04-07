@@ -44,6 +44,34 @@ def _aa_simple(X, i_alphas, i_betas, max_iter, tol, verbose=False):
 
 
 class AA(BaseEstimator, TransformerMixin):
+    """
+    Archetype Analysis estimator.
+
+    Parameters
+    ----------
+    n_archetypes : int, default=4
+        The number of archetypes to compute.
+    n_init : int, default=5
+         Number of time the archetype analysis algorithm will be run with
+         different coefficient initialization. The final results will be the
+         best output of *n_init* consecutive runs in terms of RSS.
+    max_iter : int, default=300
+        Maximum number of iterations of the archetype analysis algorithm
+        for a single run.
+    tol : float, default=1e-4
+        Relative tolerance of two consecutive iterations to declare convergence.
+    verbose : bool, default=False
+        Verbosity mode.
+    random_state : int, RandomState instance or None, default=None
+        Determines random number generation of coefficients. Use an int to make
+        the randomness deterministic.
+
+    References
+    ----------
+    .. [1] Adele Cutler, & Leo Breiman (1994). Archetypal analysis. Technometrics, 36, 338-347.
+
+
+    """
     def __init__(self, n_archetypes=4, n_init=5, max_iter=300, tol=1e-4, verbose=False, random_state=None):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
@@ -97,6 +125,25 @@ class AA(BaseEstimator, TransformerMixin):
         return alphas, betas
 
     def fit(self, X, y=None, **fit_params):
+        """
+        Compute Archetype Analysis.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training instances to compute the archetypes.
+            It must be noted that the data will be converted to C ordering,
+            which will cause a memory copy if the given data is not C-contiguous.
+            If a sparse matrix is passed, a copy will be made if it's not in
+            CSR format.
+        y : Ignored
+            Not used, present here for API consistency by convention.
+
+        Returns
+        -------
+        self : object
+            Fitted estimator.
+        """
         X = self._validate_data(X, dtype=[np.float64, np.float32])
         self._check_parameters()
         self._check_data(X)
@@ -122,6 +169,23 @@ class AA(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
+        """
+        Transform X to an archetype-distance space.
+
+        In the new space, each dimension is the distance to the archetypes.
+        Note that even if X is sparse, the array returned by `transform` will
+        typically be dense.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            New data to transform.
+
+        Returns
+        -------
+        X_new : ndarray of shape (n_samples, n_archetypes)
+            X transformed in the new space.
+        """
         check_is_fitted(self)
         X = self._validate_data(X, dtype=[np.float64, np.float32])
         self._check_parameters()
@@ -130,4 +194,21 @@ class AA(BaseEstimator, TransformerMixin):
         return alphas
 
     def fit_transform(self, X, y=None, **fit_params):
+        """
+        Compute the archetypes and transform X to archetype-distance space.
+
+        Equivalent to fit(X).transform(X), but more efficiently implemented.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            New data to transform.
+        y : Ignored
+            Not used, present here for API consistency by convention.
+
+        Returns
+        -------
+        X_new : ndarray of shape (n_samples, n_archetypes)
+            X transformed in the new space.
+        """
         return self.fit(X, y, **fit_params).transform(X)

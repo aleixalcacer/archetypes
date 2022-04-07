@@ -30,12 +30,10 @@ release = archetypes.__version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.napoleon',
-    "myst_parser",
-]
-
-myst_enable_extensions = [
-    "colon_fence",
+    'numpydoc',
+    'myst_nb',
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -52,13 +50,43 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'furo'
+html_theme = 'pydata_sphinx_theme'
 html_title = "Archetypes"
+html_logo = "_static/arch.png"
+
+html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/aleixalcacer/archetypes",
+            "icon": "fab fa-github-square",
+            "type": "fontawesome",
+        }
+    ]
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-html_css_files = [
-    'css/custom.css',
+
+
+# -- Extensions configuration ------------------------------------------------
+
+# myst configuration
+myst_enable_extensions = [
+    "colon_fence",
 ]
+jupyter_execute_notebooks = "off"
+
+# Intersphinx params
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/devdocs/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'sklearn': ("https://scikit-learn.org/stable/", None),
+}
+
+# Autosummary
+
+autosummary_generate = True

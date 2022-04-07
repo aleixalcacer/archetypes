@@ -67,6 +67,28 @@ def _biaa_simple(X, i_alphas, i_betas, i_gammas, i_thetas, max_iter, tol, verbos
 
 
 class BiAA(BaseEstimator):
+    """
+    Bi-Archetype Analysis estimator.
+
+    Parameters
+    ----------
+    n_archetypes : tuple of int, default=(3, 2)
+       The number of archetypes, both for samples and for features, to compute.
+    n_init : int, default=5
+        Number of time the archetype analysis algorithm will be run with
+        different coefficient initialization. The final results will be the
+        best output of *n_init* consecutive runs in terms of RSS.
+    max_iter : int, default=300
+       Maximum number of iterations of the archetype analysis algorithm
+       for a single run.
+    tol : float, default=1e-4
+       Relative tolerance of two consecutive iterations to declare convergence.
+    verbose : bool, default=False
+       Verbosity mode.
+    random_state : int, RandomState instance or None, default=None
+       Determines random number generation of coefficients. Use an int to make
+       the randomness deterministic.
+    """
     def __init__(self, n_archetypes=(3, 2), n_init=5, max_iter=300, tol=1e-4, verbose=False,
                  random_state=None):
         self.n_archetypes = n_archetypes
@@ -141,6 +163,25 @@ class BiAA(BaseEstimator):
         return alphas, betas, gammas, thetas
 
     def fit(self, X, y=None, **fit_params):
+        """
+        Compute Bi-Archetype Analysis.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training instances to compute the archetypes.
+            It must be noted that the data will be converted to C ordering,
+            which will cause a memory copy if the given data is not C-contiguous.
+            If a sparse matrix is passed, a copy will be made if it's not in
+            CSR format.
+        y : Ignored
+            Not used, present here for API consistency by convention.
+
+        Returns
+        -------
+        self : object
+            Fitted estimator.
+        """
         X = self._validate_data(X, dtype=[np.float64, np.float32])
         self._check_parameters()
         self._check_data(X)
@@ -169,13 +210,51 @@ class BiAA(BaseEstimator):
         return self
 
     def transform(self, X):
+        """
+        Transform X to a biarchetype-distance space.
+
+        In the new space, each dimension is the distance to the archetypes.
+        Note that even if X is sparse, the array returned by `transform` will
+        typically be dense.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            New data to transform.
+
+        Returns
+        -------
+        X_new_samples : ndarray of shape (n_samples, n_samp_archetypes)
+            X samples transformed in the new space.
+        X_new_features : ndarray of shape (n_feat_archetypes, n_features)
+            X features transformed in the new space.
+        """
         check_is_fitted(self)
         X = self._validate_data(X, dtype=[np.float64, np.float32])
         self._check_parameters()
         Z = self.archetypes_
         alphas = _optimize_alphas(X, Z @ self.gammas_)
         gammas = _optimize_gammas(X, self.alphas_ @ Z)
-        return alphas
+        return alphas, gammas
 
     def fit_transform(self, X, y=None, **fit_params):
+        """
+        Compute the biarchetypes and transform X to archetype-distance space.
+
+        Equivalent to fit(X).transform(X), but more efficiently implemented.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            New data to transform.
+        y : Ignored
+            Not used, present here for API consistency by convention.
+
+        Returns
+        -------
+        X_new_samples : ndarray of shape (n_samples, n_samp_archetypes)
+            X samples transformed in the new space.
+        X_new_features : ndarray of shape (n_feat_archetypes, n_features)
+            X features transformed in the new space.
+        """
         return self.fit(X, y, **fit_params).transform(X)

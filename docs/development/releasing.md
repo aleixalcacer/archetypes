@@ -1,4 +1,12 @@
-# Releasing
+# Release guide
+
+```{admonition} This document is only relevant for Archetypes release managers.
+:class: seealso
+
+A guide for developers who are doing a Archetypes release.
+```
+
+
 1. Check that `archetypes/version.py` contains the correct version number.
 
 2. Commit the changes:

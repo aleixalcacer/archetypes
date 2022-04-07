@@ -1,2 +1,4 @@
-pandas
-plotly
+archetypes
+scikit-learn
+matplotlib
+numpy
