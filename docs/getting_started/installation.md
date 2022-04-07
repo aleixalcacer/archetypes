@@ -1,20 +1,17 @@
-Installation
-============
-You can install Archetypes via PyPI or cloning the GitHub repository.
+# Installation
 
-Pip (PyPI)
-++++++++++
+You can install Archetypes from PyPI or from its source code.
 
-.. code-block::
+## PyPI
 
-    python -m pip install archetypes
+```shell
+python -m pip install archetypes
+```
 
+## Source Code (Github repository)
 
-Source code
-+++++++++++
-
-.. code-block::
-
-    git clone https://github.com/aleixalcacer/archetypes
-    cd archetypes
-    python -m pip install .
+```shell
+git clone https://github.com/aleixalcacer/archetypes
+cd archetypes
+python -m pip install .
+```
