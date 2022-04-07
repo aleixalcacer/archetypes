@@ -1,4 +1,6 @@
-# Archetypes documentation
+:::{include} ../README.md
+:::
+
 
 :::{toctree}
 :hidden:
