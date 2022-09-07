@@ -111,7 +111,6 @@ class AA(BaseEstimator, TransformerMixin):
             raise ValueError(
                 f"n_int should be > 0, got {self.n_init} instead."
             )
-        self._n_init = self.n_init
 
         if not isinstance(self.algorithm_init, str):
             raise TypeError
@@ -125,13 +124,6 @@ class AA(BaseEstimator, TransformerMixin):
 
         if self._algorithm_init == "auto":
             self._algorithm_init = "furthest_sum"
-        if self._algorithm_init == "furthest_sum" and self.n_init > 1:
-            warnings.warn(
-                "algorithm_init='furthest_sum' doesn't make sense for a multiple "
-                "initializations. Using n_init=1 instead.",
-                RuntimeWarning,
-            )
-            self._n_init = 1
 
         if not isinstance(self.verbose, bool):
             raise TypeError
@@ -178,9 +170,9 @@ class AA(BaseEstimator, TransformerMixin):
         random_state = check_random_state(self.random_state)
 
         self.rss_ = inf
-        for i in range(self._n_init):
+        for i in range(self.n_init):
             if self.verbose:
-                print(f"Initialization {i + 1:{len(str(self._n_init))}}/{self._n_init}")
+                print(f"Initialization {i + 1:{len(str(self.n_init))}}/{self.n_init}")
 
             i_alphas, i_betas = self._init_coefs(X, random_state)
 
