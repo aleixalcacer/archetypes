@@ -3,6 +3,8 @@ from sklearn.utils.validation import check_is_fitted, check_random_state
 import numpy as np
 from math import inf
 from scipy.optimize import nnls
+from .furthest_sum import furthest_sum
+import warnings
 
 
 def _optimize_alphas(B, A):
@@ -89,12 +91,13 @@ class BiAA(BaseEstimator):
        Determines random number generation of coefficients. Use an int to make
        the randomness deterministic.
     """
-    def __init__(self, n_archetypes=(3, 2), n_init=5, max_iter=300, tol=1e-4, verbose=False,
-                 random_state=None):
+    def __init__(self, n_archetypes=(3, 2), n_init=5, max_iter=300, tol=1e-4, algorithm_init="auto",
+                 verbose=False, random_state=None):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
         self.tol = tol
         self.n_init = n_init
+        self.algorithm_init = algorithm_init
         self.verbose = verbose
         self.random_state = random_state
 
@@ -136,6 +139,19 @@ class BiAA(BaseEstimator):
                 f"n_int should be > 0, got {self.n_init} instead."
             )
 
+        if not isinstance(self.algorithm_init, str):
+            raise TypeError
+        algorithm_init_names = ["auto", "random", "furthest_sum"]
+        if self.algorithm_init not in algorithm_init_names:
+            raise ValueError(
+                f"algorithm_init must be one of {algorithm_init_names}, "
+                f"got {self.algorithm_init} instead."
+            )
+        self._algorithm_init = self.algorithm_init
+
+        if self._algorithm_init == "auto":
+            self._algorithm_init = "furthest_sum"
+
         if not isinstance(self.verbose, bool):
             raise TypeError
 
@@ -145,8 +161,11 @@ class BiAA(BaseEstimator):
         for i, j in enumerate(ind):
             alphas[i, j] = 1
 
-        ind = random_state.choice(X.shape[0], self.n_archetypes[0])
         betas = np.zeros((self.n_archetypes[0], X.shape[0]), dtype=np.float64)
+        if self._algorithm_init == "random":
+            ind = random_state.choice(X.shape[0], self.n_archetypes)
+        else:
+            ind = furthest_sum(X.T, self.n_archetypes[0], random_state)
         for i, j in enumerate(ind):
             betas[i, j] = 1
 
@@ -155,8 +174,11 @@ class BiAA(BaseEstimator):
         for j, i in enumerate(ind):
             gammas[i, j] = 1
 
-        ind = random_state.choice(X.shape[1], self.n_archetypes[1])
         thetas = np.zeros((X.shape[1], self.n_archetypes[1]), dtype=np.float64)
+        if self._algorithm_init == "random":
+            ind = random_state.choice(X.shape[1], self.n_archetypes[1])
+        else:
+            ind = furthest_sum(X, self.n_archetypes[1], random_state)
         for j, i in enumerate(ind):
             thetas[i, j] = 1
 

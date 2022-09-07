@@ -29,7 +29,7 @@ def furthest_sum(K, noc, random_state):
         return max(zip(range(len(l)), l), key=lambda x: x[1])
 
     I, J = K.shape
-    i = [int(np.ceil(J * random_state.rand()))]
+    i = [int(np.floor(J * random_state.rand()))]
     index = np.array(range(J))
     index[i] = -1
     ind_t = i

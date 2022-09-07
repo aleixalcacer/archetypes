@@ -2,12 +2,12 @@ import archetypes as arch
 import numpy as np
 from time import time
 
-data = np.random.normal(0, 4, 1_000). reshape(-1, 2)
+data = np.random.normal(0, 4, 2_000). reshape(-1, 2)
 
 aa_kwargs = dict(
     n_archetypes=4,
-    n_init=10,
-    max_iter=1_000,
+    n_init=5,
+    max_iter=200,
     verbose=False,
     tol=1e-4,
 )
