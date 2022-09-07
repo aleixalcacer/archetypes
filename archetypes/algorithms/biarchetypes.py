@@ -60,7 +60,7 @@ def _biaa_simple(X, i_alphas, i_betas, i_gammas, i_thetas, max_iter, tol, verbos
         betas = _optimize_betas(Z, X @ thetas)
         thetas = _optimize_thetas(Z, betas @ X)
         Z = betas @ X @ thetas
-        rss = np.sum(np.power(X - alphas @ Z @ gammas, 2))
+        rss = np.linalg.norm(X - alphas @ Z @ gammas)  # Frobenius norm
         if np.abs(rss_0 - rss) < tol:
             break
         rss_0 = rss

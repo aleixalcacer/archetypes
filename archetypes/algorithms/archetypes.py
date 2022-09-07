@@ -36,7 +36,7 @@ def _aa_simple(X, i_alphas, i_betas, max_iter, tol, verbose=False):
         Z = np.linalg.pinv(alphas) @ X
         betas = _optimize_betas(Z, X)
         Z = betas @ X
-        rss = np.sum(np.power(X - alphas @ Z, 2))
+        rss = np.linalg.norm(X - alphas @ Z)  # Frobenius norm
         if np.abs(rss_0 - rss) < tol:
             break
         rss_0 = rss
