@@ -41,4 +41,3 @@ Please make sure to update tests as appropriate.
 ## License
 
 Distributed under the BSD 3-Clause License. See [LICENSE](LICENSE) for more information.
-

@@ -7,25 +7,19 @@ A guide for developers who are doing a Archetypes release.
 ```
 
 
-1. Check that `archetypes/version.py` contains the correct version number.
+1. Bump the version of the project using a valid bump rule (`patch`, `minor`, `major`)
+  according to the release commits:
+
+        poetry version [bump rule]
 
 2. Commit the changes:
-  
-        git commit -a -m "Getting ready for release X.Y.Z"
-        git push
-  
-3. Create a tag `X.Y.Z` from `main` and push it to the github repo.
-  Use the next message:
 
-        git tag -a vX.Y.Z -m "Tagging version X.Y.Z"
+        git commit -a -m "Getting ready for release $(poetry version -s)"
+        git push
+
+3. Create a tag from `main` and push it to the Github repo. Use the next message:
+
+        git tag -a v$(poetry version -s) -m "Tagging version $(poetry version -s)"
         git push --tags
 
 4. [Create a release](https://github.com/aleixalcacer/archetypes/releases) on Github.
-  
-5. Edit the version number in `archetypes/version.py` to increment the version
-  to the next minor one (i.e. `X.Y.Z` -> `X.Y.(Z+1).dev0`).
-
-6. Commit your changes with:
-
-        git commit -a -m "Post X.Y.Z release actions done"
-        git push

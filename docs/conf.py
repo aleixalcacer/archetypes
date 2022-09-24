@@ -12,16 +12,18 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+
+import archetypes
+
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'archetypes'
-copyright = '2022, Aleix Alcacer'
-author = 'Aleix Alcacer'
+project = "archetypes"
+copyright = "2022, Aleix Alcacer"
+author = "Aleix Alcacer"
 
-import archetypes
 release = archetypes.__version__
 
 # -- General configuration ---------------------------------------------------
@@ -30,14 +32,14 @@ release = archetypes.__version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'numpydoc',
-    'myst_nb',
+    "numpydoc",
+    "myst_nb",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -50,7 +52,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pydata_sphinx_theme'
+html_theme = "pydata_sphinx_theme"
 html_title = "Archetypes"
 html_logo = "_static/arch.png"
 
@@ -68,7 +70,7 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 
 # -- Extensions configuration ------------------------------------------------
@@ -81,10 +83,10 @@ jupyter_execute_notebooks = "off"
 
 # Intersphinx params
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/devdocs/', None),
-    'matplotlib': ('https://matplotlib.org/stable/', None),
-    'sklearn': ("https://scikit-learn.org/stable/", None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/devdocs/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "sklearn": ("https://scikit-learn.org/stable/", None),
 }
 
 # Autosummary

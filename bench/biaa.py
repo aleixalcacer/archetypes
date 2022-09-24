@@ -1,28 +1,32 @@
-import archetypes as arch
-import numpy as np
 from time import time
-from sklearn.datasets import make_checkerboard
+
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.datasets import make_checkerboard
+
+import archetypes as arch
 
 random_state = np.random.RandomState(12)
 
 n_archetypes = (3, 3)
-data, rows, columns = make_checkerboard(shape=(90, 90),
-                                        n_clusters=n_archetypes,
-                                        shuffle=False,
-                                        noise=4,
-                                        random_state=random_state)
+data, rows, columns = make_checkerboard(
+    shape=(90, 90),
+    n_clusters=n_archetypes,
+    shuffle=False,
+    noise=4,
+    random_state=random_state,
+)
 plt.matshow(data, cmap=plt.cm.Blues)
 plt.title("Original dataset")
 plt.show()
 
-aa_kwargs = dict(
-    n_archetypes=n_archetypes,
-    n_init=5,
-    max_iter=10_000,
-    verbose=False,
-    tol=1e-8,
-)
+aa_kwargs = {
+    "n_archetypes": n_archetypes,
+    "n_init": 5,
+    "max_iter": 10_000,
+    "verbose": False,
+    "tol": 1e-8,
+}
 
 mod0 = arch.BiAA(**aa_kwargs, algorithm_init="random")
 t0 = time()

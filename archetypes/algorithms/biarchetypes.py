@@ -1,15 +1,16 @@
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils.validation import check_is_fitted, check_random_state
-import numpy as np
 from math import inf
+
+import numpy as np
 from scipy.optimize import nnls
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import check_is_fitted, check_random_state
+
 from .furthest_sum import furthest_sum
-import warnings
 
 
 def _optimize_alphas(B, A):
-    B = np.pad(B, ((0, 0), (0, 1)), 'constant', constant_values=200)
-    A = np.pad(A, ((0, 0), (0, 1)), 'constant', constant_values=200)
+    B = np.pad(B, ((0, 0), (0, 1)), "constant", constant_values=200)
+    A = np.pad(A, ((0, 0), (0, 1)), "constant", constant_values=200)
     alphas = np.empty((B.shape[0], A.shape[0]))
     for j in range(alphas.T.shape[1]):
         alphas.T[:, j], _ = nnls(A.T, B.T[:, j])
@@ -24,8 +25,8 @@ def _optimize_betas(B, A):
 
 
 def _optimize_gammas(B, A):
-    B = np.pad(B, ((0, 1), (0, 0)), 'constant', constant_values=200)
-    A = np.pad(A, ((0, 1), (0, 0)), 'constant', constant_values=200)
+    B = np.pad(B, ((0, 1), (0, 0)), "constant", constant_values=200)
+    A = np.pad(A, ((0, 1), (0, 0)), "constant", constant_values=200)
 
     gammas = np.empty((A.shape[1], B.shape[1]))
     for j in range(gammas.shape[1]):
@@ -45,14 +46,13 @@ def _biaa_simple(X, i_alphas, i_betas, i_gammas, i_thetas, max_iter, tol, verbos
     betas = i_betas
     gammas = i_gammas
     thetas = i_thetas
-    
+
     Z = betas @ X @ thetas
 
     rss_0 = inf
     for n_iter in range(max_iter):
-        if verbose:
-            if n_iter % 100 == 0:
-                print(f"    Iteration: {n_iter + 1:{len(str(max_iter))}}, RSS: {rss_0:.2f}")
+        if verbose and n_iter % 100 == 0:
+            print(f"    Iteration: {n_iter + 1:{len(str(max_iter))}}, RSS: {rss_0:.2f}")
 
         alphas = _optimize_alphas(X, Z @ gammas)
         gammas = _optimize_gammas(X, alphas @ Z)
@@ -91,8 +91,17 @@ class BiAA(BaseEstimator):
        Determines random number generation of coefficients. Use an int to make
        the randomness deterministic.
     """
-    def __init__(self, n_archetypes=(3, 2), n_init=5, max_iter=300, tol=1e-4, algorithm_init="auto",
-                 verbose=False, random_state=None):
+
+    def __init__(
+        self,
+        n_archetypes=(3, 2),
+        n_init=5,
+        max_iter=300,
+        tol=1e-4,
+        algorithm_init="auto",
+        verbose=False,
+        random_state=None,
+    ):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
         self.tol = tol
@@ -115,29 +124,21 @@ class BiAA(BaseEstimator):
         if not isinstance(self.n_archetypes[0], int):
             raise TypeError
         if self.n_archetypes[0] <= 0:
-            raise ValueError(
-                f"n_archetypes[0] should be > 0, got {self.n_archetypes[0]} instead."
-            )
+            raise ValueError(f"n_archetypes[0] should be > 0, got {self.n_archetypes[0]} instead.")
         if not isinstance(self.n_archetypes[1], int):
             raise TypeError
         if self.n_archetypes[1] <= 0:
-            raise ValueError(
-                f"n_archetypes[1] should be > 0, got {self.n_archetypes[1]} instead."
-            )
+            raise ValueError(f"n_archetypes[1] should be > 0, got {self.n_archetypes[1]} instead.")
 
         if not isinstance(self.max_iter, int):
             raise TypeError
         if self.max_iter <= 0:
-            raise ValueError(
-                f"max_iter should be > 0, got {self.max_iter} instead."
-            )
+            raise ValueError(f"max_iter should be > 0, got {self.max_iter} instead.")
 
         if not isinstance(self.n_init, int):
             raise TypeError
         if self.n_init <= 0:
-            raise ValueError(
-                f"n_int should be > 0, got {self.n_init} instead."
-            )
+            raise ValueError(f"n_int should be > 0, got {self.n_init} instead.")
 
         if not isinstance(self.algorithm_init, str):
             raise TypeError
@@ -217,8 +218,15 @@ class BiAA(BaseEstimator):
             i_alphas, i_betas, i_gammas, i_thetas = self._init_coefs(X, random_state)
 
             alphas, betas, gammas, thetas, rss, Z, n_iter = _biaa_simple(
-                X, i_alphas, i_betas, i_gammas, i_thetas,
-                self.max_iter, self.tol, self.verbose)
+                X,
+                i_alphas,
+                i_betas,
+                i_gammas,
+                i_thetas,
+                self.max_iter,
+                self.tol,
+                self.verbose,
+            )
 
             if rss < self.rss_:
                 self.alphas_ = alphas

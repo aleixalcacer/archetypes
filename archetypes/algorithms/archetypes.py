@@ -1,20 +1,23 @@
+from math import inf
+
+import numpy as np
+from scipy.optimize import nnls
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
-import numpy as np
-from math import inf
-from scipy.optimize import nnls
+
 from .furthest_sum import furthest_sum
-import warnings
+
 
 def _optimize_alphas(B, A):
-    B = np.pad(B, ((0, 0), (0, 1)), 'constant', constant_values=200)
-    A = np.pad(A, ((0, 0), (0, 1)), 'constant', constant_values=200)
+    B = np.pad(B, ((0, 0), (0, 1)), "constant", constant_values=200)
+    A = np.pad(A, ((0, 0), (0, 1)), "constant", constant_values=200)
     alphas = np.empty((B.shape[0], A.shape[0]))
     for j in range(alphas.T.shape[1]):
         alphas.T[:, j], _ = nnls(A.T, B.T[:, j])
     alphas /= alphas.sum(1)[:, None]
     alphas[np.isnan(alphas)] = 1 / alphas.shape[1]
     return alphas
+
 
 def _optimize_betas(B, A):
     return _optimize_alphas(B, A)
@@ -28,9 +31,8 @@ def _aa_simple(X, i_alphas, i_betas, max_iter, tol, verbose=False):
 
     rss_0 = inf
     for n_iter in range(max_iter):
-        if verbose:
-            if n_iter % 100 == 0:
-                print(f"    Iteration: {n_iter + 1:{len(str(max_iter))}}, RSS: {rss_0:.2f}")
+        if verbose and n_iter % 100 == 0:
+            print(f"    Iteration: {n_iter + 1:{len(str(max_iter))}}, RSS: {rss_0:.2f}")
 
         alphas = _optimize_alphas(X, Z)
         Z = np.linalg.pinv(alphas) @ X
@@ -69,12 +71,22 @@ class AA(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] Adele Cutler, & Leo Breiman (1994). Archetypal analysis. Technometrics, 36, 338-347.
+    .. [1] Adele Cutler, & Leo Breiman (1994). Archetypal analysis.
+       Technometrics, 36, 338-347.
 
 
     """
-    def __init__(self, n_archetypes=4, n_init=1, max_iter=300, tol=1e-4, algorithm_init="auto", verbose=False,
-                 random_state=None):
+
+    def __init__(
+        self,
+        n_archetypes=4,
+        n_init=1,
+        max_iter=300,
+        tol=1e-4,
+        algorithm_init="auto",
+        verbose=False,
+        random_state=None,
+    ):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
         self.tol = tol
@@ -82,7 +94,6 @@ class AA(BaseEstimator, TransformerMixin):
         self.verbose = verbose
         self.random_state = random_state
         self.algorithm_init = algorithm_init
-
 
     def _check_data(self, X):
         if X.shape[0] < self.n_archetypes:
@@ -94,23 +105,17 @@ class AA(BaseEstimator, TransformerMixin):
         if not isinstance(self.n_archetypes, int):
             raise TypeError
         if self.n_archetypes <= 0:
-            raise ValueError(
-                f"n_archetypes should be > 0, got {self.n_archetypes} instead."
-            )
+            raise ValueError(f"n_archetypes should be > 0, got {self.n_archetypes} instead.")
 
         if not isinstance(self.max_iter, int):
             raise TypeError
         if self.max_iter <= 0:
-            raise ValueError(
-                f"max_iter should be > 0, got {self.max_iter} instead."
-            )
+            raise ValueError(f"max_iter should be > 0, got {self.max_iter} instead.")
 
         if not isinstance(self.n_init, int):
             raise TypeError
         if self.n_init <= 0:
-            raise ValueError(
-                f"n_int should be > 0, got {self.n_init} instead."
-            )
+            raise ValueError(f"n_int should be > 0, got {self.n_init} instead.")
 
         if not isinstance(self.algorithm_init, str):
             raise TypeError
@@ -177,7 +182,8 @@ class AA(BaseEstimator, TransformerMixin):
             i_alphas, i_betas = self._init_coefs(X, random_state)
 
             alphas, betas, rss, Z, n_iter = _aa_simple(
-                X, i_alphas, i_betas, self.max_iter, self.tol, self.verbose)
+                X, i_alphas, i_betas, self.max_iter, self.tol, self.verbose
+            )
 
             if rss < self.rss_:
                 self.alphas_ = alphas
