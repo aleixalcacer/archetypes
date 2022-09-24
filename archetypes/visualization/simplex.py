@@ -1,11 +1,22 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def simplex(points, show_points=True,
-            show_direction=False, direction_color="black", direction_alpha=0.2,
-            show_edges=True, show_circle=True, ax=None, arch_labels=None, **kwargs):
+
+def simplex(
+    points,
+    show_points=True,
+    show_direction=False,
+    direction_color="black",
+    direction_alpha=0.2,
+    show_edges=True,
+    show_circle=True,
+    ax=None,
+    arch_labels=None,
+    **kwargs,
+):
     """
-    A simplex plot of *points* with multiple optional parameters to obtain a customized visualization.
+    A simplex plot of *points* with multiple optional parameters to obtain a customized
+    visualization.
 
     Parameters
     ----------
@@ -29,16 +40,19 @@ def simplex(points, show_points=True,
     """
     if not ax:
         ax = plt.gca()
-    ax.set_aspect('equal', adjustable='box')
+    ax.set_aspect("equal", adjustable="box")
 
     n = points.shape[1]
 
     # Set the background
-    from matplotlib.patches import Ellipse, PathPatch
     from itertools import combinations
 
+    from matplotlib.patches import Ellipse, PathPatch
+
     if show_circle:
-        circle = Ellipse((0, 0), 2, 2, linewidth=1, edgecolor="lightgray", facecolor="none", zorder=1)
+        circle = Ellipse(
+            (0, 0), 2, 2, linewidth=1, edgecolor="lightgray", facecolor="none", zorder=1
+        )
         ax.add_patch(circle)
 
     vertices = np.array([(np.sin(i * 2 * np.pi / n), np.cos(i * 2 * np.pi / n)) for i in range(n)])
@@ -48,20 +62,27 @@ def simplex(points, show_points=True,
         for p1, p2 in edges:
             x1, y1 = p1
             x2, y2 = p2
-            ax.plot([x1, x2], [y1, y2], '-', linewidth=.75, color="lightgray", zorder=1)
+            ax.plot([x1, x2], [y1, y2], "-", linewidth=0.75, color="lightgray", zorder=1)
 
     # ax.plot(vertices[:, 0], vertices[:, 1], "o", color="black", alpha=1)
 
     for i, p in enumerate(vertices):
-        ax.annotate(f"A {i}" if not arch_labels else arch_labels[i], xy=p, xytext=p * 1.1,
-                    horizontalalignment="center", verticalalignment="center")
+        ax.annotate(
+            f"A {i}" if not arch_labels else arch_labels[i],
+            xy=p,
+            xytext=p * 1.1,
+            horizontalalignment="center",
+            verticalalignment="center",
+        )
 
-    ax.set(xlim=(- 1.25, 1.25), ylim=(- 1.25, 1.25))
+    ax.set(xlim=(-1.25, 1.25), ylim=(-1.25, 1.25))
     ax.axis("off")
     # ax.set_aspect('equal')
 
     # Project the points to 2D
-    points_projected = np.apply_along_axis(lambda x: np.sum(x.reshape(-1, 1) * vertices, 0), 1, points)
+    points_projected = np.apply_along_axis(
+        lambda x: np.sum(x.reshape(-1, 1) * vertices, 0), 1, points
+    )
 
     if show_points:
         ax.scatter(points_projected[:, 0], points_projected[:, 1], zorder=2, **kwargs)
@@ -80,11 +101,11 @@ def simplex(points, show_points=True,
             verts = np.stack((zeros, projections), axis=1).reshape(-1, projections.shape[1])
             verts = np.apply_along_axis(lambda x: x + p_projected, 1, verts)
 
-            codes = np.array([
-                                 Path.MOVETO,
-                                 Path.LINETO] * n)
+            codes = np.array([Path.MOVETO, Path.LINETO] * n)
 
             path = Path(verts, codes)
-            patch = PathPatch(path, edgecolor=direction_color, lw=1, alpha=direction_alpha, zorder=3)
+            patch = PathPatch(
+                path, edgecolor=direction_color, lw=1, alpha=direction_alpha, zorder=3
+            )
             ax.add_patch(patch)
     return ax

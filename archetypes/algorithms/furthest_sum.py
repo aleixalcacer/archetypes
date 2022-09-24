@@ -25,19 +25,20 @@ def furthest_sum(K, noc, random_state):
     i : List[int]
         The extracted candidate archetypes
     """
-    def max_ind_val(l):
-        return max(zip(range(len(l)), l), key=lambda x: x[1])
 
-    I, J = K.shape
-    i = [int(np.floor(J * random_state.rand()))]
-    index = np.array(range(J))
+    def max_ind_val(v):
+        return max(zip(range(len(v)), v), key=lambda x: x[1])
+
+    i_shape, j_shape = K.shape
+    i = [int(np.floor(j_shape * random_state.rand()))]
+    index = np.array(range(j_shape))
     index[i] = -1
     ind_t = i
-    sum_dist = np.zeros((1, J), np.complex128)
+    sum_dist = np.zeros((1, j_shape), np.complex128)
 
-    if J > noc * I:
+    if j_shape > noc * i_shape:
         Kt = K
-        Kt2 = np.sum(Kt ** 2, axis=0)
+        Kt2 = np.sum(Kt**2, axis=0)
         for k in range(1, noc + 11):
             if k > noc - 1:
                 Kq = np.dot(Kt[:, i[0]], Kt)
@@ -52,12 +53,13 @@ def furthest_sum(K, noc, random_state):
             i.append(ind_t)
             index[ind_t] = -1
     else:
-        if I != J or np.sum(K - K.T) != 0:  # Generate kernel if K not one
+        if i_shape != j_shape or np.sum(K - K.T) != 0:  # Generate kernel if K not one
             Kt = K
             K = np.dot(Kt.T, Kt)
             K = np.lib.scimath.sqrt(
-                np.tile(np.diag(K), (J, 1)) - 2 * K + \
-                np.tile(np.mat(np.diag(K)).T, (1, J))
+                np.tile(np.diag(K), (j_shape, 1))
+                - 2 * K
+                + np.tile(np.mat(np.diag(K)).T, (1, j_shape))
             )
 
         Kt2 = np.diag(K)  # Horizontal

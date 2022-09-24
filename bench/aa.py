@@ -1,16 +1,18 @@
-import archetypes as arch
-import numpy as np
 from time import time
 
-data = np.random.normal(0, 4, 2_000). reshape(-1, 2)
+import numpy as np
 
-aa_kwargs = dict(
-    n_archetypes=4,
-    n_init=5,
-    max_iter=200,
-    verbose=False,
-    tol=1e-4,
-)
+import archetypes as arch
+
+data = np.random.normal(0, 4, 2_000).reshape(-1, 2)
+
+aa_kwargs = {
+    "n_archetypes": 4,
+    "n_init": 5,
+    "max_iter": 200,
+    "verbose": False,
+    "tol": 1e-4,
+}
 
 mod0 = arch.AA(**aa_kwargs, algorithm_init="random")
 t0 = time()
