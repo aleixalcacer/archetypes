@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "archetypes"
-version = "0.2.1"
+version = "0.3.0"
 description = "A scikit-learn compatible Python package for archetypal analysis"
 authors = ["Aleix Alcacer <aleixalcacer@gmail.com>"]
 readme = "README.md"
