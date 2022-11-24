@@ -1,11 +1,21 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "archetypes/__init__.py"
+
+[project]
 name = "archetypes"
-version = "0.3.0"
+# version = "0.3.0"
+dynamic = ["version"]
 description = "A scikit-learn compatible Python package for archetypal analysis"
-authors = ["Aleix Alcacer <aleixalcacer@gmail.com>"]
 readme = "README.md"
+requires-python = ">=3.8"
 license = "BSD-3-Clause"
-repository = "https://github.com/aleixalcacer/archetypes"
+authors = [
+    {name = "Aleix Alcacer", mail = "aleixalcacer@gmail.com"}
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -14,27 +24,29 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering"
 ]
+dependencies = [
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "matplotlib",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-numpy = "^1.23.3"
-scikit-learn = "^1.1.2"
-scipy = "^1.9.1"
-matplotlib = "^3.6.0"
+[project.urls]
+"Documentation" = "https://archetypes.readthedocs.io"
+"Source code" = "https://github.com/aleixalcacer/archetypes"
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^2.20.0"
-flake8 = "^5.0.4"
-pytest = "^7.1.3"
-black = {extras = ["jupyter"], version = "^22.8.0"}
-isort = "^5.10.1"
-pylint = "^2.15.3"
-jupyter = "^1.0.0"
+[tool.hatch.envs.dev]
+dependencies = [
+    "pre-commit",
+    "flake8",
+    "pytest",
+    "black[jupyter]",
+    "isort",
+    "pylint",
+    "jupyter",
+]
 
 [tool.isort]
 profile = "black"
@@ -44,7 +56,3 @@ max-line-length = "100"
 
 [tool.black]
 line-length = 100
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
