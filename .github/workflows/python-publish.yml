@@ -25,4 +25,4 @@ jobs:
     - name: Build and publish
       run: |
         hatch build
-        hatch publish -u token -a ${{ secrets.PYPI_API_TOKEN }}
+        hatch publish -u __token__ -a ${{ secrets.PYPI_API_TOKEN }}
