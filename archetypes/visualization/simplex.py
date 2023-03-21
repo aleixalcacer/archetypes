@@ -11,6 +11,7 @@ def simplex(
     show_edges=True,
     show_circle=True,
     ax=None,
+    labels=None,
     arch_labels=None,
     **kwargs,
 ):
@@ -35,6 +36,10 @@ def simplex(
         If True, the circle of the plot are displayed.
     ax : matplotlib.pyplot.axes or None
         The axes
+    labels : list or None
+        A list of labels for the points. If None, no labels are displayed.
+    arch_labels : list or None
+        A list of labels for the archetypes. If None, no labels are displayed.
     kwargs
 
     """
@@ -86,6 +91,17 @@ def simplex(
 
     if show_points:
         ax.scatter(points_projected[:, 0], points_projected[:, 1], zorder=2, **kwargs)
+
+    if labels is not None:
+        for i, p in enumerate(points_projected):
+            ax.annotate(
+                labels[i],
+                xy=p,
+                xytext=(p[0] + 0.03, p[1] + 0.03),
+                horizontalalignment="center",
+                verticalalignment="center",
+                color="gray",
+            )
 
     # Draw the projections to each axis
     if show_direction:
