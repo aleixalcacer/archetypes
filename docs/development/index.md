@@ -1,6 +1,7 @@
 # Development
 
 :::{toctree}
+:maxdepth: 2
 
 Contributing <contributing.md>
 Release procedure <releasing.md>
