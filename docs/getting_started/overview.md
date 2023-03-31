@@ -1,14 +1,14 @@
 # Package overview
 
-The Archetypes package is designed to provide a set of algorithms for performing Archetypal Analysis (AA). The goal of the package is to make AA more accessible and easier to implement for Python developers. This package provides a set of functions for data preprocessing, archetypal analysis, and visualization of the results.
+The Archetypes package is designed to provide a set of algorithms for performing Archetypal Analysis (AA). The goal of the package is to make AA more accessible and easier to implement for Python developers. This package provides a set of functions for performing AA on a variety of data types, including NumPy arrays, Pandas dataframes, and PyTorch tensors. The package also provides a set of visualization tools for visualizing the results of AA.
 
 ## What is Archetypal Analysis?
 
-Archetypal Analysis is a data analysis method that aims to identify a small number of archetypes, which are extreme examples of the data set.
+Archetypal Analysis is a data analysis method that aims to identify a small number of archetypes, which are extreme examples of the data set. These archetypes can be used to describe the data set and to perform dimensionality reduction, outlier detection, and clustering.
 
-Specifically, each data point will be represented as a linear combination of the archetypes. Moreover, each archetype will be represented as a linear combination of the original data points.
+AA is based on the concept of convex hulls, which are the smallest convex shapes that can contain all the observations in a dataset. The archetypes are the vertices of these convex hulls, which represent the most extreme and typical points in the data. AA seeks to find the smallest set of archetypes that can explain the convex hull of the data.
 
-Therefore, these archetypes will lie in the convex hull of the data set, being the most representative examples this.
+Each observation in the data set can be represented as a linear combination of the archetypes. The coeficients of this linear combination are constrained to be non-negative and sum to one, which ensures that the resulting combination is a convex combination of the archetypes. This coeficients can be used to describe the observation, and they can be used to reconstruct the observation from the archetypes.
 
 ## Benefits of using Archetypal Analysis
 
