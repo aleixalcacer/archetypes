@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 project = "archetypes"
 author = "Aleix Alcacer"
-copyright = f"{datetime.now().year}, {author}"
+copyright = f"{datetime.now().year} {author}"
 
 release = archetypes.__version__
 
