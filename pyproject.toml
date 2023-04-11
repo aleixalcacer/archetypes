@@ -7,7 +7,6 @@ path = "archetypes/__init__.py"
 
 [project]
 name = "archetypes"
-# version = "0.3.0"
 dynamic = ["version"]
 description = "A scikit-learn compatible Python package for archetypal analysis"
 readme = "README.md"
@@ -34,6 +33,7 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "matplotlib",
+    "torch",
 ]
 
 [project.urls]
