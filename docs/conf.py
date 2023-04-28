@@ -62,7 +62,7 @@ html_theme_options = {
         {
             "name": "GitHub",
             "url": "https://github.com/aleixalcacer/archetypes",
-            "icon": "fab fa-github-square",
+            "icon": "fa-brands fa-square-github",
             "type": "fontawesome",
         }
     ]
