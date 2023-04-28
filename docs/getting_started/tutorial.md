@@ -1,10 +1,15 @@
 # Tutorials
 
-Welcome to the tutorials section of the Aarchetypes package! In this section, we provide a set of tutorials that cover different aspects of Archetypal Analysis (AA) using the Archetypes package. These tutorials are designed to help you get started with AA, understand its benefits, and demonstrate how to use the Archetypes package to perform various types of analyses.
+In this section, we provide a set of tutorials that cover different aspects of Archetypal Analysis (AA) using the Archetypes package. These tutorials are designed to help you get started with AA, understand its benefits, and demonstrate how to use the Archetypes package to perform various types of analyses.
 
 The tutorials are organized into the following sections:
 
+- [Archetype Analysis](examples/aa.ipynb): This section includes tutorials that demonstrate how to perform AA using the Archetypes package.
+- [Biarchetype Analysis](examples/biaa.ipynb): This section includes tutorials that demonstrate how to perform Biarchetype Analysis using the Archetypes package.
+
 :::{toctree}
+:hidden: true
+
 Archetype Analysis <examples/aa.ipynb>
 Biarchetype Analysis <examples/biaa.ipynb>
 :::
