@@ -4,25 +4,25 @@ from tqdm import tqdm
 
 
 class BiAA(nn.Module):
+    """
+    Biarchetype analysis implemented in PyTorch.
+
+    Parameters
+    ----------
+    k: tuple
+        The number of archetypes to use for each dimension.
+
+    m: int
+        The number of observations in the first dimension.
+
+    n: int
+        The number of observations in the second dimension.
+
+    device: str
+        The device to use for training the model. Defaults to "cpu".
+    """
+
     def __init__(self, k, m, n, device="cpu"):
-        """
-        BiAA model.
-
-        Parameters
-        ----------
-        k: tuple
-            The number of archetypes to use for each dimension.
-
-        m: int
-            The number of observations in the first dimension.
-
-        n: int
-            The number of observations in the second dimension.
-
-        device: str
-            The device to use for training the model. Defaults to "cpu".
-        """
-
         super().__init__()
 
         self.m = m
@@ -99,20 +99,55 @@ class BiAA(nn.Module):
 
     @property
     def A(self):
+        """
+        A coefficients matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return torch.softmax(self._A, dim=1)
 
     @property
     def B(self):
+        """
+        B coefficients matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return torch.softmax(self._B, dim=1)
 
     @property
     def Z(self):
+        """
+        The archetypes matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return self._Z
 
     @property
     def C(self):
+        """
+        C coefficients matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return torch.softmax(self._C, dim=0)
 
     @property
     def D(self):
+        """
+        D coefficients matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return torch.softmax(self._D, dim=0)
