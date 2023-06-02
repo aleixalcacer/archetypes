@@ -10,6 +10,9 @@ Whether you are a developer who is new to our API or an experienced user looking
 Algorithms
 ----------
 
+Scikit-learn
+~~~~~~~~~~~~
+
 .. autosummary::
    :toctree: _autosummary
    :recursive:
@@ -17,6 +20,16 @@ Algorithms
 
    AA
    BiAA
+
+PyTorch
+~~~~~~~
+
+.. autosummary::
+   :toctree: _autosummary/pytorch
+   :template: class-pytorch.rst
+
+   torch.AA
+   torch.BiAA
 
 Visualization
 -------------

@@ -14,10 +14,8 @@ import datetime
 import os
 import sys
 
-import archetypes
-
 sys.path.insert(0, os.path.abspath(".."))
-
+import archetypes
 
 # -- Project information -----------------------------------------------------
 

@@ -4,25 +4,25 @@ from tqdm import tqdm
 
 
 class AA(nn.Module):
+    """
+    Archetype analysis implemented in PyTorch.
+
+    Parameters
+    ----------
+    k: int
+        The number of archetypes to use.
+
+    m: int
+        The number of observations.
+
+    n: int
+        The number of variables.
+
+    device: str
+        The device to use for training the model. Defaults to "cpu".
+    """
+
     def __init__(self, k, m, n, device="cpu"):
-        """
-        BiAA model.
-
-        Parameters
-        ----------
-        k: int
-            The number of archetypes to use.
-
-        m: int
-            The number of observations.
-
-        n: int
-            The number of variables.
-
-        device: str
-            The device to use for training the model. Defaults to "cpu".
-        """
-
         super().__init__()
 
         self.m = m
@@ -85,12 +85,33 @@ class AA(nn.Module):
 
     @property
     def A(self):
+        """
+        A coefficient matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return torch.softmax(self._A, dim=1)
 
     @property
     def B(self):
+        """
+        B coefficient matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return torch.softmax(self._B, dim=1)
 
     @property
     def Z(self):
+        """
+        The archetypes matrix.
+
+        Returns
+        -------
+        torch.Tensor
+        """
         return self._Z
