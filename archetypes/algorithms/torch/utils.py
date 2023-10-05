@@ -1,6 +1,16 @@
 import torch
 
 
+def einsum(param_tensors, tensor):
+    n = len(param_tensors)
+    letters = [chr(i) for i in range(97, 97 + 2 * n)]
+    inner_symbols = letters[:n]
+    outer_symbols = letters[-n:]
+    equation = [f"{o}{i}," for o, i in zip(outer_symbols, inner_symbols)]
+    equation = "".join(equation) + "".join(inner_symbols) + "->" + "".join(outer_symbols)
+    return torch.einsum(equation, *param_tensors, tensor)
+
+
 def hardmax(tensor, dim):
     id = [range(s) for s in tensor.shape]
     id[dim] = torch.argmax(tensor, dim=dim)
