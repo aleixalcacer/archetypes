@@ -80,7 +80,7 @@ html_css_files = [
 myst_enable_extensions = [
     "colon_fence",
 ]
-jupyter_execute_notebooks = "off"
+nb_execution_mode = "off"
 
 # Intersphinx params
 intersphinx_mapping = {

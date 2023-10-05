@@ -137,3 +137,6 @@ dmypy.json
 
 # macOS
 .DS_Store
+
+# project
+exemples/
