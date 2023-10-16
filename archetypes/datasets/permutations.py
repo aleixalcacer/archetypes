@@ -88,9 +88,13 @@ def sort_by_archetype_similarity(data, alphas):
     data, info = permute_dataset(data, perms)
 
     labels = [np.argmax(a, axis=1) for a in alphas]
+    scores = [np.max(a, axis=1) for a in alphas]
     labels = [labels[i][perms[i]] for i in range(data.ndim)]
+    scores = [scores[i][perms[i]] for i in range(data.ndim)]
 
     info["labels"] = labels
+    info["scores"] = scores
+    info["n_archetypes"] = [ai.shape[1] for ai in alphas]
 
     return data, info
 

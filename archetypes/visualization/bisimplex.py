@@ -2,19 +2,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from archetypes.visualization import simplex
-
-
-def _create_palette(saturation, value, n_colors, int_colors=3):
-    hue = np.linspace(0, 1, n_colors, endpoint=False)
-    hue = np.hstack([hue[i::int_colors] for i in range(int_colors)])
-    saturation = np.full(n_colors, saturation)
-    value = np.full(n_colors, value)
-    # convert to RGB
-    c = mpl.colors.hsv_to_rgb(np.vstack([hue, saturation, value]).T)
-    # Create palette
-    palette = mpl.colors.ListedColormap(c)
-    return palette
+from .simplex import simplex
+from .utils import create_palette
 
 
 def bisimplex(alphas, archetypes, ax=None, **kwargs):
@@ -44,7 +33,7 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
     n_archetypes = archetypes.shape
 
     # Get the colors for the vertices of the polytopes
-    palette = _create_palette(
+    palette = create_palette(
         saturation=0.35, value=0.9, n_colors=n_archetypes[0] + n_archetypes[1], int_colors=1
     )
 
@@ -85,7 +74,7 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
 
     # Use grayscale palette from matplotlib between 0 and 1
     # archetypes[:] = .6
-    palette = mpl.colormaps["Grays"]
+    palette = mpl.colormaps["Greys"]
 
     for x_i, y_i, c_i, a_i in zip(
         xx.flatten(), yy.flatten(), archetypes.flatten(), archetypes_scaled.flatten()

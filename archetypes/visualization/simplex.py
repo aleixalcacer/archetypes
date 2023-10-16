@@ -88,7 +88,7 @@ def simplex(
         for p1, p2 in edges:
             x1, y1 = p1
             x2, y2 = p2
-            ax.plot([x1, x2], [y1, y2], "-", linewidth=0.75, color="lightgray", zorder=0)
+            ax.plot([x1, x2], [y1, y2], "-", linewidth=1, color="lightgray", zorder=0)
 
     # ax.plot(vertices[:, 0], vertices[:, 1], "o", color="black", alpha=1)
     if show_vertices:

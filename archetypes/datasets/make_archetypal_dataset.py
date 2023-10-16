@@ -57,10 +57,17 @@ def make_archetypal_dataset(
     A = [np.zeros((s_i, a_i)) for s_i, a_i in zip(shape, n_archetypes)]
 
     for A_i, labels_i in zip(A, labels):
+        l_i_prev = -1
         for i, l_i in enumerate(labels_i):
-            alpha_i = [alpha] * A_i.shape[1]
-            alpha_i[l_i] = 1
-            A_i[i, :] = generator.dirichlet(alpha_i)
+            if l_i_prev != l_i:
+                alpha_i = [0] * A_i.shape[1]
+                alpha_i[l_i] = 1
+                A_i[i, :] = alpha_i
+                l_i_prev = l_i
+            else:
+                alpha_i = [alpha] * A_i.shape[1]
+                alpha_i[l_i] = 1
+                A_i[i, :] = generator.dirichlet(alpha_i)
 
     X = einsum(A, archetypes)
 
