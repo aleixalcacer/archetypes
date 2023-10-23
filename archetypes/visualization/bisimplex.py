@@ -50,8 +50,20 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
         "return_vertices": True,
         "ax": ax,
     }
-    _, v1 = simplex(alphas[0], origin=(0, -3), vertices_color=colors_1, **simplex_kwargs, **kwargs)
-    _, v2 = simplex(alphas[1], origin=(3, 0), vertices_color=colors_2, **simplex_kwargs, **kwargs)
+
+    alphas1 = alphas[0]
+    if len(alphas1) > 1000:
+        # pick random 100 points
+        idx = np.random.choice(len(alphas1), 1000, replace=False)
+        alphas1 = alphas1[idx]
+    alphas2 = alphas[1]
+    if len(alphas2) > 1000:
+        # pick random 100 points
+        idx = np.random.choice(len(alphas2), 1000, replace=False)
+        alphas2 = alphas2[idx]
+
+    _, v1 = simplex(alphas1, origin=(0, -3), vertices_color=colors_1, **simplex_kwargs, **kwargs)
+    _, v2 = simplex(alphas2, origin=(3, 0), vertices_color=colors_2, **simplex_kwargs, **kwargs)
 
     x1, y1 = v1.T
     x2, y2 = v2.T

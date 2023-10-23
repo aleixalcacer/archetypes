@@ -42,8 +42,6 @@ def heatmap(data, labels=None, n_archetypes=None, scores=None, ax=None, **kwargs
     if "cmap" not in kwargs:
         kwargs["cmap"] = "Greys"
 
-    data_size = max(data.shape)
-
     # Plot line if labels[i] != labels[i+1]
     if labels is not None:
         # check labels is a list of 2 arrays
@@ -103,7 +101,7 @@ def heatmap(data, labels=None, n_archetypes=None, scores=None, ax=None, **kwargs
         counts = np.cumsum(counts)
         counts = np.concatenate([[0], counts]) - 0.5
 
-        arch_factor = 0.05 * data_size
+        arch_factor = 0.05 * data.shape[1]
 
         if scores is None:
             scores = [np.ones_like(labels[0]), np.ones_like(labels[1])]
@@ -114,7 +112,7 @@ def heatmap(data, labels=None, n_archetypes=None, scores=None, ax=None, **kwargs
 
             ax.imshow(
                 scores[0][int(i0 + 0.5) : int(i1 + 0.5)][::-1].reshape(-1, 1),
-                extent=[-arch_factor, -2 * arch_factor, i0, i1],
+                extent=[-0.5 - arch_factor, -0.5 - 2 * arch_factor, i0, i1],
                 cmap=LinearSegmentedColormap.from_list("c", [c2, c1]),
                 interpolation="none",
                 vmax=1,
@@ -125,13 +123,15 @@ def heatmap(data, labels=None, n_archetypes=None, scores=None, ax=None, **kwargs
         counts = np.cumsum(counts)
         counts = np.concatenate([[0], counts]) - 0.5
 
+        arch_factor = 0.05 * data.shape[0]
+
         for c, (i0, i1) in zip(colors_2, zip(counts, counts[1:])):
             c1 = np.array(to_rgb(c))
             c2 = np.array([1, 1, 1])
 
             ax.imshow(
                 scores[1][int(i0 + 0.5) : int(i1 + 0.5)].reshape(1, -1),
-                extent=[i0, i1, -arch_factor, -2 * arch_factor],
+                extent=[i0, i1, -0.5 - arch_factor, -0.5 - 2 * arch_factor],
                 cmap=LinearSegmentedColormap.from_list("c", [c2, c1]),
                 interpolation="none",
                 vmax=1,
@@ -140,19 +140,23 @@ def heatmap(data, labels=None, n_archetypes=None, scores=None, ax=None, **kwargs
 
     ax.matshow(data, interpolation="none", **kwargs)
 
-    # set aspect ratio to equal
-    ax.set_aspect("equal")
+    # set aspect ratio to square
+    ax.set_box_aspect(1)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 2)
+    ax.set_xlim(-2 * data.shape[1] * 0.05 - 0.5, data.shape[1] - 0.5)
+    ax.set_ylim(data.shape[0] - 0.5, -2 * data.shape[0] * 0.05 - 0.5)
+    ax.set_aspect("auto")
+
     # set axis off
     ax.axis("off")
     # set axis limits
 
-    ax.autoscale(enable=True, axis="both", tight=False)
-
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-
-    lim_factor = 0.01 * data_size
-    ax.set_xlim(xlim[0] - lim_factor, xlim[1] + lim_factor)
-    ax.set_ylim(ylim[0] + lim_factor, ylim[1] - lim_factor)
+    #
+    lim_factor = 0.01
+    ax.set_xlim(xlim[0] - lim_factor * data.shape[1], xlim[1] + lim_factor * data.shape[1])
+    ax.set_ylim(ylim[0] + lim_factor * data.shape[0], ylim[1] - lim_factor * data.shape[0])
 
     return ax
