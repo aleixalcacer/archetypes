@@ -57,20 +57,11 @@ def make_archetypal_dataset(
     A = [np.zeros((s_i, a_i)) for s_i, a_i in zip(shape, n_archetypes)]
 
     for A_i, labels_i in zip(A, labels):
-        for i, l_i in enumerate(labels_i):
-            alpha_i = [alpha] * A_i.shape[1]
-            alpha_i[l_i] = 1
-            d_i = None
-            while d_i != l_i:
-                d = generator.dirichlet(alpha_i)
-                # assert d.shape = (A_i.shape[1],)
-                if d.shape != (A_i.shape[1],):
-                    raise ValueError(
-                        f"Coefficients shape {d.shape} does not match archetype shape"
-                        f"{A_i.shape[1]}"
-                    )
-                d_i = np.argmax(d)
-            A_i[i, :] = d
+        coefs = generator.uniform(0, alpha, A_i.shape)
+        coefs[range(A_i.shape[0]), labels_i] = 1
+        coefs = coefs / coefs.sum(axis=1, keepdims=True)
+
+        A_i[...] = coefs
 
     X = einsum(A, archetypes)
 
