@@ -83,8 +83,17 @@ def sort_by_archetype_similarity(data, alphas, archetypes):
     """
 
     # reorder data and archetypes by the number of elements in each 'archetypal group'
-    perms = [np.argsort(-np.unique(np.argmax(a, axis=1), return_counts=True)[1]) for a in alphas]
-    alphas = [a[:, perms_i] for a, perms_i in zip(alphas, perms)]
+
+    perms = []
+    for i, alpha_i in enumerate(alphas):
+        values, counts = np.unique(np.argmax(alpha_i, axis=1), return_counts=True)
+        # sort values by counts
+        perms_i = values[np.argsort(-counts)]
+        # add missing indexes to perms
+        perms_i = np.concatenate([perms_i, np.setdiff1d(np.arange(alpha_i.shape[1]), perms_i)])
+        perms.append(perms_i)
+
+    alphas = [a_i[:, perms_i] for a_i, perms_i in zip(alphas, perms)]
 
     archetypes, _ = permute_dataset(archetypes, perms)
 
