@@ -67,7 +67,11 @@ def make_archetypal_dataset(
             else:
                 alpha_i = [alpha] * A_i.shape[1]
                 alpha_i[l_i] = 1
-                A_i[i, :] = generator.dirichlet(alpha_i)
+                d_i = -1
+                while d_i != l_i:
+                    d = generator.dirichlet(alpha_i)
+                    d_i = np.argmax(d)
+                A_i[i, :] = d
 
     X = einsum(A, archetypes)
 
