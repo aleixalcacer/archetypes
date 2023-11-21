@@ -35,6 +35,7 @@ dependencies = [
     "matplotlib",
     "torch",
     "tqdm",
+    "opt_einsum"
 ]
 
 [project.urls]
