@@ -33,9 +33,9 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "matplotlib",
-    "torch",
-    "tqdm",
-    "opt_einsum"
+    "jax",
+    "optax",
+    "custom_inherit"
 ]
 
 [project.urls]

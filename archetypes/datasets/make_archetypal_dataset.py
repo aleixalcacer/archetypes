@@ -40,7 +40,6 @@ def make_archetypal_dataset(
     list of np.ndarray
         The labels for each dimension.
     """
-
     n_archetypes = archetypes.shape
 
     generator = check_generator(generator)
@@ -67,10 +66,7 @@ def make_archetypal_dataset(
             else:
                 alpha_i = [alpha] * A_i.shape[1]
                 alpha_i[l_i] = 1
-                d_i = -1
-                while d_i != l_i:
-                    d = generator.dirichlet(alpha_i)
-                    d_i = np.argmax(d)
+                d = generator.dirichlet(alpha_i)
                 A_i[i, :] = d
 
     X = einsum(A, archetypes)

@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 
 
 def check_generator(generator=None):
@@ -24,3 +25,36 @@ def check_generator(generator=None):
         raise ValueError(f"generator must be an int, a Generator or None, got {generator}")
 
     return generator
+
+
+__all__ = ["check_generator"]
+
+
+def nnls(B, A, max_iter=None, const=1000.0):
+    """
+    Non-negative Least Squares optimization.
+    B = A @ X
+
+    Parameters
+    ----------
+    B: np.ndarray
+        The matrix to decompose.
+    X: np.ndarray
+        The matrix to decompose with.
+
+    Returns
+    -------
+    A: np.ndarray
+        The coefficients matrix.
+    """
+    B = np.hstack([B, const * np.ones((B.shape[0], 1))])
+    A = np.hstack([A, const * np.ones((A.shape[0], 1))])
+
+    X = np.zeros((B.shape[0], A.shape[0]))
+    for i in range(B.shape[0]):
+        X[i, :] = scipy.optimize.nnls(A.T, B[i, :], maxiter=max_iter)[0]
+
+    X = np.maximum(X, 0)
+    X = X / np.sum(X, axis=1)[:, None]
+
+    return X

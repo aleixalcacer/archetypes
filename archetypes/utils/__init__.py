@@ -1,3 +1,3 @@
-from .utils import check_generator
+from .utils import check_generator, nnls
 
-__all__ = ["check_generator"]
+__all__ = ["check_generator", "nnls"]

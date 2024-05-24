@@ -106,8 +106,14 @@ def simplex(
     for i, p in enumerate(vertices):
         ax.annotate(
             vertices_labels[i],
-            xy=p,
-            xytext=(p - origin) * 1.2 + origin,
+            xy=(p - origin) * 1.1 + origin,
+            xytext=(p - origin) * 1.3 + origin,
+            arrowprops={
+                "arrowstyle": "->",
+                "lw": 1,
+                "color": "gray",
+                "connectionstyle": "arc3,rad=0.2",
+            },
             horizontalalignment="center",
             verticalalignment="center",
             zorder=3,

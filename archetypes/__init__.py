@@ -1,6 +1,5 @@
-from .algorithms import AA, BiAA, furthest_sum, torch
-from .visualization import simplex
+from archetypes import sklearn as sklearn
 
-__all__ = ["AA", "BiAA", "furthest_sum", "simplex", "torch"]
+__all__ = ["sklearn"]
 
 __version__ = "0.6.2"
