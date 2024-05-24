@@ -13,27 +13,13 @@ Algorithms
 Scikit-learn
 ~~~~~~~~~~~~
 
+.. currentmodule:: archetypes.sklearn
 .. autosummary::
-   :toctree: _autosummary
+   :toctree: _autosummary/sklearn
    :recursive:
    :template: class.rst
 
    AA
-   BiAA
-
-
-PyTorch
-~~~~~~~
-
-.. currentmodule:: archetypes.torch
-
-.. autosummary::
-   :toctree: _autosummary/torch
-   :template: class-pytorch.rst
-
-   AA
-   BiAA
-   NAA
 
 
 Visualization

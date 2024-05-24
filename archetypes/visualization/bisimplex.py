@@ -1,4 +1,3 @@
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -53,12 +52,12 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
 
     alphas1 = alphas[0]
     if len(alphas1) > 1000:
-        # pick random 100 points
+        # pick random 1000 points
         idx = np.random.choice(len(alphas1), 1000, replace=False)
         alphas1 = alphas1[idx]
     alphas2 = alphas[1]
     if len(alphas2) > 1000:
-        # pick random 100 points
+        # pick random 1000 points
         idx = np.random.choice(len(alphas2), 1000, replace=False)
         alphas2 = alphas2[idx]
 
@@ -77,33 +76,10 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
     y_size = sq_size * n_archetypes[0]
 
     # Compute the coordinates of the cells
-    x_matrix = np.linspace(-x_size / 2, x_size / 2, n_archetypes[1])
-    y_matrix = np.linspace(-y_size / 2, y_size / 2, n_archetypes[0])[::-1]
+    x_matrix = np.linspace(-x_size / 2, x_size / 2, n_archetypes[1], endpoint=False)
+    y_matrix = np.linspace(-y_size / 2, y_size / 2, n_archetypes[0], endpoint=False)[::-1]
 
     xx, yy = np.meshgrid(x_matrix[:], y_matrix[:])
-
-    # Draw the heatmap cells
-
-    # Use grayscale palette from matplotlib between 0 and 1
-    # archetypes[:] = .6
-    palette = mpl.colormaps["Greys"]
-
-    for x_i, y_i, c_i, a_i in zip(
-        xx.flatten(), yy.flatten(), archetypes.flatten(), archetypes_scaled.flatten()
-    ):
-        # transform black color with alpha to rgba
-        c_i = palette(c_i)
-        sq_size_i = sq_size * a_i
-        square = plt.Rectangle(
-            (x_i - sq_size_i / 2, y_i - sq_size_i / 2),
-            sq_size_i,
-            sq_size_i,
-            color=c_i,
-            fill=True,
-            linewidth=0,
-            zorder=10,
-        )
-        ax.add_patch(square)
 
     # Draw the archetypes next to the heatmap
     yy, xx = np.meshgrid(x_matrix[0], y_matrix)
@@ -130,6 +106,18 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
         )
         ax.add_patch(square)
 
+    # Draw colorbar as rectangle
+    ax2 = ax.inset_axes(
+        [-x_size / 2 - sq_size / 2, -y_size / 2 - sq_size / 2, x_size, y_size],
+        transform=ax.transData,
+        zorder=-10,
+    )
+
+    # heatmap(archetypes_scaled, ax=ax2, **kwargs)
+
+    ax2.imshow(archetypes_scaled, cmap=plt.cm.Greys, vmin=0, vmax=1)
+    ax2.axis("off")
+
     # Draw lines between archetypes and heatmap cells
     for i, (x_i, y_i, c1_i) in enumerate(zip(x1, y1, colors_1)):
         for j, (x_matrix_i, c2_i) in enumerate(zip(x_matrix, colors_2)):
@@ -138,9 +126,9 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
                 [y_i, y_matrix[i]],
                 color=c1_i,
                 linestyle="-",
-                linewidth=archetypes_scaled[i, j] * 7,
+                linewidth=archetypes_scaled[i, j] * 5,
                 zorder=0,
-                alpha=archetypes_scaled[i, j] * 0.5,
+                alpha=archetypes_scaled[i, j] ** 2,
             )
 
     for i, (x_i, y_i, c2_i) in enumerate(zip(x2, y2, colors_2)):
@@ -150,9 +138,9 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
                 [y_i, y_matrix_i],
                 color=c2_i,
                 linestyle="-",
-                linewidth=archetypes_scaled[j, i] * 7,
+                linewidth=archetypes_scaled[j, i] * 5,
                 zorder=0,
-                alpha=archetypes_scaled[j, i] * 0.5,
+                alpha=archetypes_scaled[j, i] ** 2,
             )
 
     # set aspect ratio to equal
@@ -163,5 +151,7 @@ def bisimplex(alphas, archetypes, ax=None, **kwargs):
 
     # set axis limits
     ax.autoscale(enable=True, axis="both", tight=False)
+
+    ax.figure.tight_layout()
 
     return ax

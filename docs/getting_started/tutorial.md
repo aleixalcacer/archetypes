@@ -5,7 +5,6 @@ In this section, we provide a set of tutorials that cover different aspects of A
 The tutorials are organized into the following sections:
 
 - [Archetype Analysis](examples/aa.ipynb): This section includes tutorials that demonstrate how to perform AA using the Archetypes package.
-- [Biarchetype Analysis](examples/biaa.ipynb): This section includes tutorials that demonstrate how to perform Biarchetype Analysis using the Archetypes package.
 
 :::{toctree}
 :hidden: true
