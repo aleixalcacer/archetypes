@@ -20,6 +20,7 @@ Scikit-learn
    :template: class.rst
 
    AA
+   BiAA
 
 
 Visualization
