@@ -139,6 +139,6 @@ def sort_by_labels(data, labels):
 
     data, info = permute_dataset(data, perms)
 
-    info["labels"] = labels
+    info["labels"] = [labels[i][perms[i]] for i in range(data.ndim)]
 
     return data, info
