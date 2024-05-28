@@ -10,22 +10,29 @@
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install archetypes.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install archetypes
 
 ```bash
 pip install archetypes
 ```
 
+or install the latest version from the repository
+
+```bash
+pip install git+https://github.com/aleixalcacer/archetypes.git
+```
+
+
 
 ## Usage
 
 ```python
-import archetypes as arch
+from archetypes.sklearn import AA
 import numpy as np
 
 X = np.random.normal(0, 1, (100, 2))
 
-aa = arch.AA(n_archetypes=4)
+aa = AA(n_archetypes=4)
 
 X_trans = aa.fit_transform(X)
 
