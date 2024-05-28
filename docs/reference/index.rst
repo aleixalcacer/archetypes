@@ -66,3 +66,9 @@ Utils
     :template: function.rst
 
     check_generator
+
+
+.. toctree:: _autosummary
+   :maxdepth: 1
+
+   optimizers

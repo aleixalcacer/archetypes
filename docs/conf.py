@@ -88,6 +88,7 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/devdocs/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
+    "optax": ("https://optax.readthedocs.io/en/latest/", None),
 }
 
 # Autosummary

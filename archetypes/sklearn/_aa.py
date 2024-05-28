@@ -42,14 +42,18 @@ class AABase(BaseEstimator, TransformerMixin):
     Attributes
     ----------
 
-    archetypes_ : np.ndarray of shape (n_archetypes, n_features)
+    archetypes_ : np.ndarray
         The computed archetypes.
-    similarity_degree_ : np.ndarray of shape (n_samples, n_archetypes)
+        It has shape `(n_archetypes, n_features)`.
+    similarity_degree_ : np.ndarray
         The similarity degree of each sample to each archetype.
-    archetypes_similarity_degree_ : np.ndarray of shape (n_archetypes, n_samples)
+        It has shape `(n_samples, n_archetypes)`.
+    archetypes_similarity_degree_ : np.ndarray
         The similarity degree of each archetype to each sample.
-    labels_ : np.ndarray of shape (n_samples,)
+        It has shape `(n_archetypes, n_samples)`.
+    labels_ : np.ndarray
         The label of each sample. It is the index of the closest archetype.
+        It has shape `(n_samples,)`.
     loss_ : list
         The loss at each iteration.
 
@@ -293,8 +297,9 @@ class AA(AABase):
     ----------
     method: str, default='nnls'
         The optimization method to use for the archetypes and the coefficients.
+        It must be one of the following: 'nnls', 'pgd' or 'jax'.
     method_kwargs : dict, default=None
-        Additional keyword arguments to pass to the optimization method. See TODO for more details.
+        Additional arguments to pass to the optimization method. See TODO for more details.
 
     """
 
