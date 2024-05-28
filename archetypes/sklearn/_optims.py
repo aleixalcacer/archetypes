@@ -6,7 +6,7 @@ from jax import grad
 from jax import nn as jnn
 from jax import numpy as jnp
 
-from archetypes.utils import nnls
+from ..utils import einsum, nnls
 
 
 @dataclass
@@ -52,6 +52,53 @@ nnls_optimizer = AAOptimizer(
     A_optimize=_nnls_optim_A,
     B_optimize=_nnls_optim_B,
     fit=_nnls_fit,
+)
+
+
+def _nnls_biaa_init_A(self, X):
+    super(type(self), self)._init_A(X)
+
+
+def _nnls_biaa_init_B(self, X):
+    super(type(self), self)._init_B(X)
+
+
+def _nnls_biaa_optim_B(self, X):
+    B_ = np.linalg.pinv(self.A_[0]) @ X
+    X_ = einsum([X, self.B_[1].T, self.A_[1].T])
+    B_0 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    self.B_[0] = B_0
+
+    B_ = (X @ np.linalg.pinv(self.A_[1].T)).T
+    X_ = einsum([self.A_[0], self.B_[0], X]).T
+    B_1 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    self.B_[1] = B_1
+
+
+def _nnls_biaa_optim_A(self, X):
+    B_ = X
+    X_ = einsum([self.B_[0], X, self.B_[1].T, self.A_[1].T])
+
+    A_0 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    self.A_[0] = A_0
+
+    B_ = X.T
+    X_ = einsum([self.A_[0], self.B_[0], X, self.B_[1].T]).T
+
+    A_1 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    self.A_[1] = A_1
+
+
+def _nnls_biaa_fit(self, X, y=None, **fit_params):
+    return super(type(self), self).fit(X, y, **fit_params)
+
+
+nnls_biaa_optimizer = AAOptimizer(
+    A_init=_nnls_biaa_init_A,
+    B_init=_nnls_biaa_init_B,
+    A_optimize=_nnls_biaa_optim_A,
+    B_optimize=_nnls_biaa_optim_B,
+    fit=_nnls_biaa_fit,
 )
 
 # Projected Gradient Descent (Closed Form)
@@ -204,4 +251,63 @@ jax_optimizer = AAOptimizer(
     A_optimize=jax_optim_A,
     B_optimize=jax_optim_B,
     fit=_jax_fit,
+)
+
+
+def _jax_biaa_init_A(self, X):
+    super(type(self), self)._init_A(X)
+    self.A_opt_ = tuple([jnp.asarray(A_i, copy=True) for A_i in self.A_])
+    self.A_ = self.A_opt_
+
+    super(type(self), self)._init_B(X)
+    self.B_opt_ = tuple([jnp.asarray(B_i, copy=True) for B_i in self.B_])
+    self.B_ = self.B_opt_
+
+    self.params = (self.A_opt_[0], self.A_opt_[1], self.B_[0], self.B_[1])
+
+    self.optimizer_state = self.optimizer.init(self.params)
+
+
+def _jax_bia_init_B(self, X):
+    pass
+
+
+def jax_biaa_optim_A(self, X):
+    grad_ = grad(_jax_biaa_loss, argnums=[0, 1, 2, 3])(*self.A_, *self.B_, X)
+    updates, self.optimizer_state = self.optimizer.update(grad_, self.optimizer_state)
+    self.params = optax.apply_updates(self.params, updates)
+    # self.params = optax.projections.projection_non_negative(self.params)
+
+    self.A_opt_ = [self.params[0], self.params[1]]
+    self.B_opt_ = [self.params[2], self.params[3]]
+    # self.A_ = [A_i for A_i in self.A_opt_]
+    # self.B_ = [B_i for B_i in self.B_opt_]
+
+    self.A_ = [jnn.softmax(A_i, axis=1) for A_i in self.A_opt_]
+    self.B_ = [jnn.softmax(B_i, axis=1) for B_i in self.B_opt_]
+
+
+def jax_biaa_optim_B(self, X):
+    pass
+
+
+def _jax_biaa_fit(self, X, y=None, **fit_params):
+    return super(type(self), self).fit(X, y, **fit_params)
+
+
+def _jax_biaa_loss(A_0, A_1, B_0, B_1, X):
+    X1 = X
+    Z = B_0 @ X @ B_1.T
+    X2 = A_0 @ Z @ A_1.T
+
+    return optax.l2_loss(X1 - X2).sum()
+
+
+# TODO: Check advanced usage of optax to improve the optimizer
+jax_biaa_optimizer = AAOptimizer(
+    A_init=_jax_biaa_init_A,
+    B_init=_jax_bia_init_B,
+    A_optimize=jax_biaa_optim_A,
+    B_optimize=jax_biaa_optim_B,
+    fit=_jax_biaa_fit,
 )
