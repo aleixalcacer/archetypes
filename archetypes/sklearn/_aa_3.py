@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import numpy as np
 import optax
 from custom_inherit import doc_inherit
@@ -6,7 +8,16 @@ from jax import nn as jnn
 from jax import numpy as jnp
 
 from ..utils import nnls
-from ._base import AABase, AAOptimizer
+from ._base import AABase
+
+
+@dataclass
+class AAOptimizer:
+    A_init: callable
+    B_init: callable
+    A_optimize: callable
+    B_optimize: callable
+    fit: callable
 
 
 @doc_inherit(parent=AABase, style="numpy_with_merge")

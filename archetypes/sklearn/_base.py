@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
 
@@ -452,30 +450,3 @@ class BiAABase(BaseEstimator, TransformerMixin):
 
     def fit_transform(self, X, y=None, **fit_params):
         pass
-
-
-@dataclass
-class AAOptimizer:
-    """
-    Dataclass to store the optimization methods for Archetype Analysis.
-
-    Attributes
-    ----------
-
-    A_init: callable
-        Method to initialize the archetypal similarity coefficients for samples.
-    B_init: callable
-        Method to initialize the sample similarity coefficients for archetypes.
-    A_optimize: callable
-        Method to optimize the archetypal similarity coefficients for samples.
-    B_optimize: callable
-        Method to optimize the sample similarity coefficients for archetypes.
-    fit: callable
-        Method to fit the model.
-    """
-
-    A_init: callable
-    B_init: callable
-    A_optimize: callable
-    B_optimize: callable
-    fit: callable

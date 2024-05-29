@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import numpy as np
 import optax
 from custom_inherit import doc_inherit
@@ -6,7 +8,16 @@ from jax import nn as jnn
 from jax import numpy as jnp
 
 from ..utils import arch_einsum, einsum, nnls
-from ._base import AAOptimizer, BiAABase
+from ._base import BiAABase
+
+
+@dataclass
+class BiAAOptimizer:
+    A_init: callable
+    B_init: callable
+    A_optimize: callable
+    B_optimize: callable
+    fit: callable
 
 
 @doc_inherit(parent=BiAABase, style="numpy_with_merge")
@@ -172,11 +183,11 @@ class BiAA_3(BiAABase_3):
 
         # Check params for the optimization method
         if self.method == "nnls":
-            self.method_c_: AAOptimizer = nnls_biaa_optimizer  # dataclass
+            self.method_c_: BiAAOptimizer = nnls_biaa_optimizer  # dataclass
             self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", None)
             self.const = self.method_kwargs.get("const", 100.0)
         elif self.method == "jax":
-            self.method_c_: AAOptimizer = jax_biaa_optimizer
+            self.method_c_: BiAAOptimizer = jax_biaa_optimizer
             self.optimizer = self.method_kwargs.get("optimizer", "sgd")
             self.optimizer_kwargs = self.method_kwargs.get(
                 "optimizer_kwargs", {"learning_rate": 1e-3}
@@ -241,7 +252,7 @@ def _nnls_biaa_fit(self, X, y=None, **fit_params):
     return super(type(self), self).fit(X, y, **fit_params)
 
 
-nnls_biaa_optimizer = AAOptimizer(
+nnls_biaa_optimizer = BiAAOptimizer(
     A_init=_nnls_biaa_init_A,
     B_init=_nnls_biaa_init_B,
     A_optimize=_nnls_biaa_optim_A,
@@ -307,7 +318,7 @@ def _jax_biaa_loss(A_0, A_1, B_0, B_1, X):
 
 
 # TODO: Check advanced usage of optax to improve the optimizer
-jax_biaa_optimizer = AAOptimizer(
+jax_biaa_optimizer = BiAAOptimizer(
     A_init=_jax_biaa_init_A,
     B_init=_jax_bia_init_B,
     A_optimize=jax_biaa_optim_A,
