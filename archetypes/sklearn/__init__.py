@@ -1,4 +1,4 @@
-from ._aa import AA, AABase
-from ._biaa import BiAA, BiAABase
+from ._aa import AA
+from ._biaa import BiAA
 
-__all__ = ["AABase", "AA", "BiAABase", "BiAA"]
+__all__ = ["AA", "BiAA"]

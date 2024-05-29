@@ -15,6 +15,7 @@ Scikit-learn
 
 .. currentmodule:: archetypes.sklearn
 .. autosummary::
+   :caption: API Reference
    :toctree: _autosummary/sklearn
    :recursive:
    :template: class.rst
@@ -55,20 +56,9 @@ Datasets
    sort_by_labels
 
 
-Utils
------
-
-.. currentmodule:: archetypes.utils
-
-..  autosummary::
-    :toctree: _autosummary/utils
-    :recursive:
-    :template: function.rst
-
-    check_generator
-
-
 .. toctree:: _autosummary
+   :caption: More information
    :maxdepth: 1
+   :hidden:
 
-   optimizers
+   optimization-methods
