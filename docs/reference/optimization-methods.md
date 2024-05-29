@@ -1,6 +1,6 @@
-(optimizers)=
+(optimization-methods)=
 
-# Optimizers
+# Optimization Methods
 
 
 ## No-Negative Least Squares

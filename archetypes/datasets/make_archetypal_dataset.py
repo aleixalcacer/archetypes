@@ -33,6 +33,7 @@ def make_archetypal_dataset(
     generator : int, Generator instance or None, default=None
         Determines random number generation for dataset creation. Pass an int
         for reproducible output across multiple function calls.
+
     Returns
     -------
     np.ndarray

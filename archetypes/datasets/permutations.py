@@ -17,8 +17,8 @@ def permute_dataset(data, perms=None) -> (np.array, dict):
     -------
     data: array-like
         The permuted dataset.
-    perms: list of array-like
-        The permutations used to permute the dataset.
+    info: dict
+        The information about the permutation.
     """
     if perms is None:
         perms = [np.arange(s) for s in data.shape]
