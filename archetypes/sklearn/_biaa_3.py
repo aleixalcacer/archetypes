@@ -225,12 +225,12 @@ def _nnls_biaa_init_B(self, X):
 def _nnls_biaa_optim_B(self, X):
     B_ = np.linalg.pinv(self.A_[0]) @ X
     X_ = einsum([X, self.B_[1].T, self.A_[1].T])
-    B_0 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    B_0 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
     self.B_[0] = B_0
 
     B_ = (X @ np.linalg.pinv(self.A_[1].T)).T
     X_ = einsum([self.A_[0], self.B_[0], X]).T
-    B_1 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    B_1 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
     self.B_[1] = B_1
 
 
@@ -238,13 +238,13 @@ def _nnls_biaa_optim_A(self, X):
     B_ = X
     X_ = einsum([self.B_[0], X, self.B_[1].T, self.A_[1].T])
 
-    A_0 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    A_0 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
     self.A_[0] = A_0
 
     B_ = X.T
     X_ = einsum([self.A_[0], self.B_[0], X, self.B_[1].T]).T
 
-    A_1 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+    A_1 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
     self.A_[1] = A_1
 
 
