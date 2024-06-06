@@ -171,11 +171,9 @@ class AA_3(AABase_3):
         elif self.method == "pgd":
             self.method_c_: AAOptimizer = pgd_optimizer
             self.beta_ = self.method_kwargs.get("beta", 0.5)
-            self.n_iter_optimizer = self.method_kwargs.get("n_iter_optimizer", 10)
-            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 1_000)
-            self.learning_rate = self.method_kwargs.get("learning_rate", 1.0)
-            self.step_size_A_ = self.learning_rate
-            self.step_size_B_ = self.learning_rate
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 10)
+            self.step_size_A_ = 1.0
+            self.step_size_B_ = 1.0
         elif self.method == "jax":
             self.method_c_: AAOptimizer = jax_optimizer
             self.optimizer = self.method_kwargs.get("optimizer", "sgd")
@@ -216,13 +214,13 @@ def _nnls_optim_B(self, X):
     self.archetypes_ = np.linalg.pinv(self.A_) @ X
     B_ = self.archetypes_
     X_ = X
-    self.B_ = nnls(B_, X_, max_iter=self.max_iter_optimizer)
+    self.B_ = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer)
 
 
 def _nnls_optim_A(self, X):
     B_ = X
     X_ = self.archetypes_
-    self.A_ = nnls(B_, X_, max_iter=self.max_iter_optimizer)
+    self.A_ = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer)
 
 
 def _nnls_fit(self, X, y=None, **fit_params):
@@ -258,27 +256,25 @@ def _pgd_optim_A(self, X):
     SST = S_ @ S_.T
     rss_prev = -2 * np.sum(CTXTX * S_) + np.sum(CTXTXC * SST)
 
-    for _ in range(self.n_iter_optimizer):
-        # Compute the gradient
-        GS_ = CTXTXC @ S_ - CTXTX
-        GS_ = GS_ - np.sum(GS_ * S_, axis=0)
+    # Compute the gradient
+    GS_ = CTXTXC @ S_ - CTXTX
+    GS_ = GS_ - np.sum(GS_ * S_, axis=0)
 
-        # Optimize the step size
-        S_prev = S_.copy()
-        for _ in range(self.max_iter_optimizer):
-            S_ = S_prev - self.step_size_A_ * GS_
-            S_ = np.where(S_ < 0, 1e-8, S_)
-            S_ = S_ / np.sum(S_, axis=0)
+    # Optimize the step size
+    S_prev = S_.copy()
+    for _ in range(self.max_iter_optimizer):
+        S_ = S_prev - self.step_size_A_ * GS_
+        S_ = np.where(S_ < 0, 1e-8, S_)
+        S_ = S_ / np.sum(S_, axis=0)
 
-            SST = S_ @ S_.T
-            rss = -2 * np.sum(CTXTX * S_) + np.sum(CTXTXC * SST)
+        SST = S_ @ S_.T
+        rss = -2 * np.sum(CTXTX * S_) + np.sum(CTXTXC * SST)
 
-            if rss <= rss_prev:
-                self.step_size_A_ /= self.beta_
-                rss_prev = rss
-                break
+        if rss <= rss_prev:
+            self.step_size_A_ /= self.beta_
+            break
 
-            self.step_size_A_ *= self.beta_
+        self.step_size_A_ *= self.beta_
 
     self.GA_ = GS_.T
     self.A_ = S_.T
@@ -295,25 +291,24 @@ def _pgd_optim_B(self, X):
 
     rss_prev = -2 * np.sum(XTXST * C_) + np.sum(C_.T @ self.XTX_ @ C_ * SST)
 
-    for _ in range(self.n_iter_optimizer):
-        # Compute the gradient
-        GC_ = self.XTX_ @ C_ @ SST - XTXST
-        GC_ = GC_ - np.sum(GC_ * C_, axis=0)
+    # Compute the gradient
+    GC_ = self.XTX_ @ C_ @ SST - XTXST
+    GC_ = GC_ - np.sum(GC_ * C_, axis=0)
 
-        # Optimize the step size
-        C_prev = C_.copy()
-        for _ in range(self.max_iter_optimizer):
-            C_ = C_prev - self.step_size_B_ * GC_
-            C_ = np.where(C_ < 0, 1e-8, C_)
-            C_ = C_ / np.sum(C_, axis=0)
+    # Optimize the step size
+    C_prev = C_.copy()
+    rss = np.inf
+    for _ in range(self.max_iter_optimizer):
+        C_ = C_prev - self.step_size_B_ * GC_
+        C_ = np.where(C_ < 0, 1e-8, C_)
+        C_ = C_ / np.sum(C_, axis=0)
 
-            rss = -2 * np.sum(XTXST * C_) + np.sum(C_.T @ self.XTX_ @ C_ * SST)
-            if rss <= rss_prev:
-                self.step_size_B_ /= self.beta_
-                rss_prev = rss
-                break
+        rss = -2 * np.sum(XTXST * C_) + np.sum(C_.T @ self.XTX_ @ C_ * SST)
+        if rss <= rss_prev:
+            self.step_size_B_ /= self.beta_
+            break
 
-            self.step_size_B_ *= self.beta_
+        self.step_size_B_ *= self.beta_
 
     self.GB_ = GC_.T
     self.B_ = C_.T

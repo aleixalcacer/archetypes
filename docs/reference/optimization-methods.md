@@ -7,19 +7,18 @@
 
 | Parameter            | Type   | Description                                                                  |
 |----------------------|--------|------------------------------------------------------------------------------|
+| `max_iter_optimizer` | int    | The maximum number of iterations in the nnls optimization.                   |
 | `const`              | float  | The constant to add in the nnls optimization to enforce convex optimization. |
-| `max_iter_optimizer` | int    | The maximum number of iterations for the optimizer.                          |
 
 
 ## Projected Gradient Descent
 
-| Parameter            | Type  | Description                                         |
-|----------------------|-------|-----------------------------------------------------|
-| `n_iter_optimizer`   | int   | The number of repetitions of the optimization.      |
-| `max_iter_optimizer` | int   | The maximum number of iterations for the optimizer. |
-| `beta`               | float | The decay factor for the learning rate.             |
+| Parameter            | Type  | Description                                                        |
+|----------------------|-------|--------------------------------------------------------------------|
+| `max_iter_optimizer` | int   | The maximum number of iterations for optimizing the learning rate. |
+| `beta`               | float | The decay factor for the learning rate.                            |
 
-## JAX Optimizers
+## JAX Gradient Descent
 
 | Parameter          | Type                                | Description                                                                                                                 |
 |--------------------|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
