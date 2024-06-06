@@ -304,7 +304,7 @@ def _pgd_optim_B(self, X):
         C_prev = C_.copy()
         for _ in range(self.max_iter_optimizer):
             C_ = C_prev - self.step_size_B_ * GC_
-            C_ = np.where(C_ < 1e-8, 0, C_)
+            C_ = np.where(C_ < 0, 1e-8, C_)
             C_ = C_ / np.sum(C_, axis=0)
 
             rss = -2 * np.sum(XTXST * C_) + np.sum(C_.T @ self.XTX_ @ C_ * SST)
