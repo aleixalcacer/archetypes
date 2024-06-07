@@ -166,7 +166,7 @@ class AA_3(AABase_3):
         # Check params for the optimization method
         if self.method == "nnls":
             self.method_c_: AAOptimizer = nnls_optimizer
-            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", None)
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer")
             self.const = self.method_kwargs.get("const", 100.0)
         elif self.method == "pgd":
             self.method_c_: AAOptimizer = pgd_optimizer
