@@ -6,8 +6,10 @@ this project as easy and transparent as possible.
 
 ## Asking for help
 
-If you have a question about how to use Archetypes, please post your question on
-StackOverflow using the [\[archetypalanalysis\] tag](https://stackoverflow.com/questions/tagged/archetypalanalysis).
+If you have a question about how to use Archetypes, please ask on the
+[GitHub Discussions](https://github.com/aleixalcacer/archetypes/discussions)
+page. This is the best way to get help because it allows others to benefit from
+the discussion.
 
 
 ## Bug reports
