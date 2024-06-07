@@ -1,17 +1,7 @@
 import numpy as np
 
-from ..utils import check_generator
+from ..utils import check_generator, partial_arch_einsum
 from .permutations import sort_by_labels
-
-
-def einsum(param_tensors, tensor):
-    n = len(param_tensors)
-    letters = [chr(i) for i in range(97, 97 + 2 * n)]
-    inner_symbols = letters[:n]
-    outer_symbols = letters[-n:]
-    equation = [f"{o}{i}," for o, i in zip(outer_symbols, inner_symbols)]
-    equation = "".join(equation) + "".join(inner_symbols) + "->" + "".join(outer_symbols)
-    return np.einsum(equation, *param_tensors, tensor)
 
 
 def make_archetypal_dataset(
@@ -41,7 +31,9 @@ def make_archetypal_dataset(
     list of np.ndarray
         The labels for each dimension.
     """
-    n_archetypes = archetypes.shape
+    ndim = len(shape)
+
+    n_archetypes = archetypes.shape[:ndim]
 
     generator = check_generator(generator)
 
@@ -68,10 +60,10 @@ def make_archetypal_dataset(
             new_labels_i[idx] = A_i[idx].argmax(axis=1)
 
     # Generate the dataset
-    X = einsum(A, archetypes)
+    X = partial_arch_einsum(A, archetypes, index=[1])
 
     # Add noise
-    X += generator.normal(0, noise, size=shape)
+    X += generator.normal(0, noise, size=X.shape)
 
     # Sort the dataset by the labels
     X, info = sort_by_labels(X, new_labels)

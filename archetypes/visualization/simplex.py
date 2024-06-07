@@ -10,10 +10,10 @@ def simplex(
     direction_color="black",
     direction_alpha=0.2,
     show_edges=True,
-    show_circle=True,
+    show_circle=False,
     ax=None,
     labels=None,
-    show_vertices=True,
+    show_vertices=False,
     vertices_color="k",
     vertices_size=200,
     vertices_labels=None,
@@ -62,7 +62,6 @@ def simplex(
     """
     if not ax:
         ax = plt.gca()
-    ax.set_aspect("equal", adjustable="box")
 
     n = points.shape[1]
 
@@ -103,8 +102,12 @@ def simplex(
     if vertices_labels is None:
         vertices_labels = [f"A{i}" for i in range(n)]
 
-    for i, p in enumerate(vertices):
-        ax.annotate(
+    ax.set_xlim(-2 + origin[0], 2 + origin[0])
+    ax.set_ylim(-2 + origin[1], 2 + origin[1])
+
+    annotations = []
+    for i, p in enumerate(vertices[:]):
+        ann_i = ax.annotate(
             vertices_labels[i],
             xy=(p - origin) * 1.1 + origin,
             xytext=(p - origin) * 1.3 + origin,
@@ -117,11 +120,27 @@ def simplex(
             horizontalalignment="center",
             verticalalignment="center",
             zorder=3,
+            transform=ax.transData,
+            # bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=1),
         )
+        annotations.append(ann_i)
 
-    ax.set(xlim=(-1.25, 1.25), ylim=(-1.25, 1.25))
-    ax.axis("off")
-    # ax.set_aspect('equal')
+    # get renderer
+    renderer = ax.figure.canvas.get_renderer()
+
+    min_y, max_y = np.inf, -np.inf
+    min_x, max_x = np.inf, -np.inf
+    for ann_i in annotations:
+        bbox = ann_i.get_window_extent(renderer=renderer)
+        bbox_data = bbox.transformed(ax.transData.inverted())
+        corners = bbox_data.corners()
+        min_y = min(min_y, corners[:, 1].min())
+        max_y = max(max_y, corners[:, 1].max())
+        min_x = min(min_x, corners[:, 0].min())
+        max_x = max(max_x, corners[:, 0].max())
+
+    ax.set_xlim(min_x, max_x)
+    ax.set_ylim(min_y, max_y)
 
     # Project the points to 2D
     points_projected = np.apply_along_axis(
@@ -133,7 +152,7 @@ def simplex(
 
     if labels is not None:
         for i, p in enumerate(points_projected):
-            ax.annotate(
+            ann_i = ax.annotate(
                 labels[i],
                 xy=p,
                 xytext=(p[0] + 0.03, p[1] + 0.03),
@@ -142,6 +161,9 @@ def simplex(
                 color="gray",
                 zorder=3,
             )
+            bbox = ann_i.get_window_extent()
+            bbox_data = bbox.transformed(ax.transData.inverted())
+            ax.update_datalim(bbox_data.corners())
 
     # Draw the projections to each axis
     if show_direction:
@@ -165,12 +187,17 @@ def simplex(
             )
             ax.add_patch(patch)
 
-    # set aspect ratio to equal
-    ax.set_aspect("equal")
-    # set axis off
     ax.axis("off")
-    # set axis limits
-    ax.autoscale(enable=True, axis="both", tight=False)
+    ax.set_aspect("equal")
+    ax.autoscale()
+    # get datalim
+
+    bbox = ax.get_window_extent(renderer=renderer)
+    bbox_data = bbox.transformed(ax.transData.inverted())
+    corners = bbox_data.corners()
+
+    # plot bbox
+    ax.scatter(corners[:, 0], corners[:, 1], marker="")
 
     if return_vertices:
         return ax, vertices

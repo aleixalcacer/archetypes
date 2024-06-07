@@ -35,7 +35,7 @@ Visualization
    :template: function.rst
 
    simplex
-   bisimplex
+   stacked_bar
    heatmap
 
 

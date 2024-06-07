@@ -35,13 +35,15 @@ def permute_dataset(data, perms=None) -> (np.array, dict):
     return data, info
 
 
-def shuffle_dataset(data, generator=None):
+def shuffle_dataset(data, ndim=None, generator=None):
     """Shuffle a dataset along each dimension.
 
     Parameters
     ----------
     data: array-like
         The dataset to shuffle.
+    ndim: list of int or None, default=None
+        The dimensions to shuffle. If None, all dimensions are shuffled.
     generator: int, Generator or None, default=None
         The generator to use for shuffling. If None, the default generator is used.
 
@@ -55,7 +57,7 @@ def shuffle_dataset(data, generator=None):
 
     generator = check_generator(generator)
 
-    perms = [np.arange(s) for s in data.shape]
+    perms = [np.arange(s) for s in data.shape[:ndim]]
     [generator.shuffle(indices_i) for indices_i in perms]
 
     data, info = permute_dataset(data, perms)
@@ -82,8 +84,9 @@ def sort_by_archetype_similarity(data, alphas, archetypes):
         The information about the sorting.
     """
 
-    # reorder data and archetypes by the number of elements in each 'archetypal group'
+    ndim = len(alphas)
 
+    # reorder data and archetypes by the number of elements in each 'archetypal group'
     perms = []
     for i, alpha_i in enumerate(alphas):
         values, counts = np.unique(np.argmax(alpha_i, axis=1), return_counts=True)
@@ -105,8 +108,8 @@ def sort_by_archetype_similarity(data, alphas, archetypes):
 
     labels = [np.argmax(a, axis=1) for a in alphas]
     scores = [np.max(a, axis=1) for a in alphas]
-    labels = [labels[i][perms[i]] for i in range(data.ndim)]
-    scores = [scores[i][perms[i]] for i in range(data.ndim)]
+    labels = [labels[i][perms[i]] for i in range(ndim)]
+    scores = [scores[i][perms[i]] for i in range(ndim)]
 
     info["labels"] = labels
     info["scores"] = scores
@@ -135,10 +138,12 @@ def sort_by_labels(data, labels):
         The information about the sorting.
     """
 
+    ndim = len(labels)
+
     perms = [np.lexsort([labels_i]) for labels_i in labels]
 
     data, info = permute_dataset(data, perms)
 
-    info["labels"] = [labels[i][perms[i]] for i in range(data.ndim)]
+    info["labels"] = [labels[i][perms[i]] for i in range(ndim)]
 
     return data, info
