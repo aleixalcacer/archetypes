@@ -184,7 +184,7 @@ class BiAA_3(BiAABase_3):
         # Check params for the optimization method
         if self.method == "nnls":
             self.method_c_: BiAAOptimizer = nnls_biaa_optimizer  # dataclass
-            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", None)
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer")
             self.const = self.method_kwargs.get("const", 100.0)
         elif self.method == "jax":
             self.method_c_: BiAAOptimizer = jax_biaa_optimizer
