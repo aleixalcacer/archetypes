@@ -10,13 +10,26 @@ Whether you are a developer who is new to our API or an experienced user looking
 Algorithms
 ----------
 
-Scikit-learn
-~~~~~~~~~~~~
+Numpy backend
+~~~~~~~~~~~~~
 
-.. currentmodule:: archetypes.sklearn
+.. currentmodule:: archetypes
 .. autosummary::
    :caption: API Reference
-   :toctree: _autosummary/sklearn
+   :toctree: _autosummary/numpy
+   :recursive:
+   :template: class.rst
+
+   AA
+   BiAA
+
+JAX backend
+~~~~~~~~~~~~~
+
+.. currentmodule:: archetypes.jax
+.. autosummary::
+   :caption: API Reference
+   :toctree: _autosummary/jax
    :recursive:
    :template: class.rst
 

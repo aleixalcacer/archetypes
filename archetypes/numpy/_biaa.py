@@ -2,14 +2,14 @@ import numpy as np
 from custom_inherit import doc_inherit
 from sklearn.utils.validation import check_is_fitted
 
-from ._aa_3 import AA_3
-from ._base import AABase
+from ._base import BiAABase
+from ._biaa_3 import BiAA_3
 
 
-@doc_inherit(parent=AABase, style="numpy_with_merge")
-class AA(AABase):
+@doc_inherit(parent=BiAABase, style="numpy_with_merge")
+class BiAA(BiAABase):
     """
-    Archetype Analysis.
+    Biarchetype Analysis with Numpy backend.
     """
 
     def __init__(
@@ -39,8 +39,8 @@ class AA(AABase):
         )
 
         # Check params for the optimization method
-        if self.method in ["nnls", "pgd", "jax"]:
-            self.method_class = AA_3(
+        if self.method in ["nnls"]:
+            self.method_class = BiAA_3(
                 n_archetypes=self.n_archetypes,
                 max_iter=self.max_iter,
                 tol=self.tol,

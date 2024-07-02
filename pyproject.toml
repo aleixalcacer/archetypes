@@ -31,7 +31,7 @@ classifiers = [
 dependencies = [
     "numpy",
     "scikit-learn",
-    "scipy",
+    "scipy<1.12",  # nnls issue, it will be fixed in 1.15
     "matplotlib",
     "jax",
     "optax",
