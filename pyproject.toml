@@ -10,15 +10,16 @@ name = "archetypes"
 dynamic = ["version"]
 description = "A scikit-learn compatible Python package for archetypal analysis"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = "BSD-3-Clause"
 authors = [
     {name = "Aleix Alcacer", mail = "aleixalcacer@gmail.com"}
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
