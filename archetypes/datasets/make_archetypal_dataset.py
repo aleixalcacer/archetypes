@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..utils import check_generator, partial_arch_einsum
+from ..utils import check_generator_numpy, partial_arch_einsum
 from .permutations import sort_by_labels
 
 
@@ -35,7 +35,7 @@ def make_archetypal_dataset(
 
     n_archetypes = archetypes.shape[:ndim]
 
-    generator = check_generator(generator)
+    generator = check_generator_numpy(generator)
 
     sizes = [
         generator.multinomial(size, np.repeat(1.0 / n, n)) for size, n in zip(shape, n_archetypes)
@@ -60,7 +60,7 @@ def make_archetypal_dataset(
             new_labels_i[idx] = A_i[idx].argmax(axis=1)
 
     # Generate the dataset
-    X = partial_arch_einsum(A, archetypes, index=[1])
+    X = partial_arch_einsum(A, archetypes, index=[])
 
     # Add noise
     X += generator.normal(0, noise, size=X.shape)

@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-import optax
 from custom_inherit import doc_inherit
-from jax import grad
-from jax import nn as jnn
-from jax import numpy as jnp
 
 from ..utils import arch_einsum, einsum, nnls
 from ._base import BiAABase
@@ -69,7 +65,7 @@ class BiAABase_3(BiAABase):
         for i, j in enumerate(ind):
             A_1[i, j] = 1
 
-        self.A_ = [A_0, A_1]
+        return [A_0, A_1]
 
     def _init_B(self, X):
         B_0 = np.zeros((self.n_archetypes[0], X.shape[0]), dtype=np.float64)
@@ -90,7 +86,7 @@ class BiAABase_3(BiAABase):
         for i, j in enumerate(ind):
             B_1[i, j] = 1
 
-        self.B_ = [B_0, B_1]
+        return [B_0, B_1]
 
     def _optim_A(self, X):
         pass
@@ -107,8 +103,8 @@ class BiAABase_3(BiAABase):
 
     def fit(self, X, y=None, **fit_params):
         # Initialize coefficients
-        self._init_A(X)  # Initialize A uniformly
-        self._init_B(X)
+        self.A_ = self._init_A(X)  # Initialize A uniformly
+        self.B_ = self._init_B(X)
 
         self._compute_archetypes(X)
 
@@ -124,8 +120,8 @@ class BiAABase_3(BiAABase):
                 print(f"Iteration {i}/{self.max_iter}: RSS = {rss}")
 
             # Optimize coefficients
-            self._optim_A(X)
-            self._optim_B(X)
+            self.A_ = self._optim_A(X)
+            self.B_ = self._optim_B(X)
 
             self._compute_archetypes(X)
 
@@ -184,16 +180,8 @@ class BiAA_3(BiAABase_3):
         # Check params for the optimization method
         if self.method == "nnls":
             self.method_c_: BiAAOptimizer = nnls_biaa_optimizer  # dataclass
-            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer")
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 100)
             self.const = self.method_kwargs.get("const", 100.0)
-        elif self.method == "jax":
-            self.method_c_: BiAAOptimizer = jax_biaa_optimizer
-            self.optimizer = self.method_kwargs.get("optimizer", "sgd")
-            self.optimizer_kwargs = self.method_kwargs.get(
-                "optimizer_kwargs", {"learning_rate": 1e-3}
-            )
-            if not isinstance(self.optimizer, optax.GradientTransformation):
-                self.optimizer = getattr(optax, self.optimizer)
 
         # TODO: Check if the parameters are valid for the optimization method
 
@@ -204,10 +192,10 @@ class BiAA_3(BiAABase_3):
         return self.method_c_.B_init(self, X)
 
     def _optim_B(self, X):
-        self.method_c_.B_optimize(self, X)
+        return self.method_c_.B_optimize(self, X)
 
     def _optim_A(self, X):
-        self.method_c_.A_optimize(self, X)
+        return self.method_c_.A_optimize(self, X)
 
     def fit(self, X, y=None, **fit_params):
         return self.method_c_.fit(self, X, y, **fit_params)
@@ -215,37 +203,37 @@ class BiAA_3(BiAABase_3):
 
 # Non-Negative Least Squares
 def _nnls_biaa_init_A(self, X):
-    super(type(self), self)._init_A(X)
+    return super(type(self), self)._init_A(X)
 
 
 def _nnls_biaa_init_B(self, X):
-    super(type(self), self)._init_B(X)
+    return super(type(self), self)._init_B(X)
 
 
 def _nnls_biaa_optim_B(self, X):
     B_ = np.linalg.pinv(self.A_[0]) @ X
     X_ = einsum([X, self.B_[1].T, self.A_[1].T])
-    B_0 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
-    self.B_[0] = B_0
+    B_0 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
 
     B_ = (X @ np.linalg.pinv(self.A_[1].T)).T
-    X_ = einsum([self.A_[0], self.B_[0], X]).T
-    B_1 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
-    self.B_[1] = B_1
+    X_ = einsum([self.A_[0], B_0, X]).T
+    B_1 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+
+    return [B_0, B_1]
 
 
 def _nnls_biaa_optim_A(self, X):
     B_ = X
     X_ = einsum([self.B_[0], X, self.B_[1].T, self.A_[1].T])
 
-    A_0 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
-    self.A_[0] = A_0
+    A_0 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
 
     B_ = X.T
-    X_ = einsum([self.A_[0], self.B_[0], X, self.B_[1].T]).T
+    X_ = einsum([A_0, self.B_[0], X, self.B_[1].T]).T
 
-    A_1 = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer, const=self.const)
-    self.A_[1] = A_1
+    A_1 = nnls(B_, X_, max_iter=self.max_iter_optimizer, const=self.const)
+
+    return [A_0, A_1]
 
 
 def _nnls_biaa_fit(self, X, y=None, **fit_params):
@@ -258,70 +246,4 @@ nnls_biaa_optimizer = BiAAOptimizer(
     A_optimize=_nnls_biaa_optim_A,
     B_optimize=_nnls_biaa_optim_B,
     fit=_nnls_biaa_fit,
-)
-
-
-# Gradient Descent (JAX)
-def _jax_biaa_init_A(self, X):
-    super(type(self), self)._init_A(X)
-    self.A_opt_ = tuple([jnp.asarray(A_i, copy=True) for A_i in self.A_])
-    self.A_ = self.A_opt_
-
-    self.params_A = (self.A_opt_[0], self.A_opt_[1])
-
-    self.optimizer_A_state = self.optimizer_A.init(self.params_A)
-
-
-def _jax_bia_init_B(self, X):
-    super(type(self), self)._init_B(X)
-    self.B_opt_ = tuple([jnp.asarray(B_i, copy=True) for B_i in self.B_])
-    self.B_ = self.B_opt_
-
-    self.params_B = (self.B_[0], self.B_[1])
-
-    self.optimizer_B_state = self.optimizer_B.init(self.params_B)
-
-
-def jax_biaa_optim_A(self, X):
-    grad_A = grad(_jax_biaa_loss, argnums=[0, 1])(*self.A_, *self.B_, X)
-    updates_A, self.optimizer_A_state = self.optimizer_A.update(grad_A, self.optimizer_A_state)
-    self.params_A = optax.apply_updates(self.params_A, updates_A)
-
-    self.A_opt_ = [self.params_A[0], self.params_A[1]]
-
-    self.A_ = [jnn.softmax(A_i, axis=1) for A_i in self.A_opt_]
-
-
-def jax_biaa_optim_B(self, X):
-    grad_B = grad(_jax_biaa_loss, argnums=[2, 3])(*self.A_, *self.B_, X)
-    updates_B, self.optimizer_B_state = self.optimizer_B.update(grad_B, self.optimizer_B_state)
-    self.params_B = optax.apply_updates(self.params_B, updates_B)
-
-    self.B_opt_ = [self.params_B[0], self.params_B[1]]
-
-    self.B_ = [jnn.softmax(B_i, axis=1) for B_i in self.B_opt_]
-
-
-def _jax_biaa_fit(self, X, y=None, **fit_params):
-    # Pre-computations for optimization
-    self.optimizer_A = self.optimizer(**self.optimizer_kwargs)
-    self.optimizer_B = self.optimizer(**self.optimizer_kwargs)
-    return super(type(self), self).fit(X, y, **fit_params)
-
-
-def _jax_biaa_loss(A_0, A_1, B_0, B_1, X):
-    X1 = X
-    Z = B_0 @ X @ B_1.T
-    X2 = A_0 @ Z @ A_1.T
-
-    return optax.l2_loss(X1 - X2).sum()
-
-
-# TODO: Check advanced usage of optax to improve the optimizer
-jax_biaa_optimizer = BiAAOptimizer(
-    A_init=_jax_biaa_init_A,
-    B_init=_jax_bia_init_B,
-    A_optimize=jax_biaa_optim_A,
-    B_optimize=jax_biaa_optim_B,
-    fit=_jax_biaa_fit,
 )

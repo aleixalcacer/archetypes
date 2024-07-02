@@ -1,12 +1,13 @@
+import jax.numpy
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_random_state
 
+from ..utils import check_generator_jax
 from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 
 
 class AABase(BaseEstimator, TransformerMixin):
     """
-    Archetype Analysis.
+    Archetype Analysis for JAX backend.
 
     Parameters
     ----------
@@ -24,16 +25,15 @@ class AABase(BaseEstimator, TransformerMixin):
         Additional keyword arguments to pass to the initialization method.
     save_init : bool, default=False
         If True, save the initial coefficients in the attribute `B_init_`.
-    method: str, default='nnls'
+    method: str, default='autogd'
         The optimization method to use for the archetypes and the coefficients.
-        It must be one of the following: 'nnls', 'pgd' or 'jax'.
+        It must be one of the following: 'autogd'.
     method_kwargs : dict, default=None
         Additional arguments to pass to the optimization method. See :ref:`optimization-methods`.
     verbose : bool, default=False
         Verbosity mode.
-    random_state : int, RandomState instance or None, default=None
-        Determines random number generation of coefficients. Use an int to make
-        the randomness deterministic.
+    seed : int Or None, default=None
+        Determines random number generation of coefficients.
 
     Attributes
     ----------
@@ -71,10 +71,10 @@ class AABase(BaseEstimator, TransformerMixin):
         init="uniform",
         init_kwargs=None,
         save_init=False,
-        method="nnls",
+        method="autogd",
         method_kwargs=None,
         verbose=False,
-        random_state=None,
+        seed=None,
     ):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
@@ -85,7 +85,7 @@ class AABase(BaseEstimator, TransformerMixin):
         self.method = method
         self.method_kwargs = method_kwargs
         self.verbose = verbose
-        self.random_state = random_state
+        self.seed = seed
 
         # Init attributes to avoid errors
         self.archetypes_ = None
@@ -102,6 +102,7 @@ class AABase(BaseEstimator, TransformerMixin):
             raise ValueError(
                 f"n_samples={X.shape[0]} should be >= n_archetypes={self.n_archetypes}."
             )
+        return jax.numpy.asarray(X)
 
     def _check_parameters(self):
         # Check if n_archetypes is a positive integer
@@ -163,10 +164,10 @@ class AABase(BaseEstimator, TransformerMixin):
             raise TypeError(f"verbose should be a boolean, got {self.verbose} instead.")
 
         # Check if random_state is an integer, a RandomState instance or None
-        self.random_state = check_random_state(self.random_state)
+        self.key = check_generator_jax(self.seed)
 
         # Check method and method_kwargs
-        if self.method not in ["nnls", "pgd", "jax"]:
+        if self.method not in ["autogd"]:
             raise ValueError(f"Invalid optimization method: {self.method}")
 
         # Check if method_kwargs is a dictionary
@@ -258,16 +259,15 @@ class BiAABase(BaseEstimator, TransformerMixin):
         Additional keyword arguments to pass to the initialization method.
     save_init : bool, default=False
         If True, save the initial coefficients in the attribute `B_init_`.
-    method: str, default='nnls'
+    method: str, default='autogd'
         The optimization method to use for the archetypes and the coefficients.
-        It must be one of the following: 'nnls', 'pgd' or 'jax'.
+        It must be one of the following: 'autogd'.
     method_kwargs : dict, default=None
         Additional arguments to pass to the optimization method. See :ref:`optimization-methods`.
     verbose : bool, default=False
         Verbosity mode.
-    random_state : int, RandomState instance or None, default=None
-        Determines random number generation of coefficients. Use an int to make
-        the randomness deterministic.
+    seed : int or None, default=None
+        Determines random number generation of coefficients.
 
     Attributes
     ----------
@@ -306,10 +306,10 @@ class BiAABase(BaseEstimator, TransformerMixin):
         init="uniform",
         init_kwargs=None,
         save_init=False,
-        method="nnls",
+        method="autogd",
         method_kwargs=None,
         verbose=False,
-        random_state=None,
+        seed=None,
     ):
         self.n_archetypes = n_archetypes
         self.max_iter = max_iter
@@ -320,7 +320,7 @@ class BiAABase(BaseEstimator, TransformerMixin):
         self.method = method
         self.method_kwargs = method_kwargs
         self.verbose = verbose
-        self.random_state = random_state
+        self.seed = seed
 
         # Init attributes to avoid errors
         self.A_ = None
@@ -340,6 +340,8 @@ class BiAABase(BaseEstimator, TransformerMixin):
                 f"n_archetypes should be less than the number of samples and features, "
                 f"got {self.n_archetypes} and {X.shape} instead."
             )
+
+        return jax.numpy.asarray(X)
 
     def _check_parameters(self):
         # Check if n_archetypes is a positive integer
@@ -403,8 +405,18 @@ class BiAABase(BaseEstimator, TransformerMixin):
         if not isinstance(self.verbose, bool):
             raise TypeError(f"verbose should be a boolean, got {self.verbose} instead.")
 
-        # Check if random_state is an integer, a RandomState instance or None
-        self.random_state = check_random_state(self.random_state)
+        self.key = check_generator_jax(self.seed)
+
+        # Check method and method_kwargs
+        if self.method not in ["autogd"]:
+            raise ValueError(f"Invalid optimization method: {self.method}")
+
+        # Check if method_kwargs is a dictionary
+        if self.method_kwargs is None:
+            self.method_kwargs = {}
+
+        if not isinstance(self.method_kwargs, dict):
+            raise TypeError("method_kwargs should be a dictionary.")
 
     def fit(self, X, y=None, **fit_params):
         """

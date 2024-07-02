@@ -27,7 +27,7 @@ pip install git+https://github.com/aleixalcacer/archetypes.git
 ## Usage
 
 ```python
-from archetypes.sklearn import AA
+from archetypes import AA
 import numpy as np
 
 X = np.random.normal(0, 1, (100, 2))

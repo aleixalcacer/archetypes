@@ -2,8 +2,9 @@
 
 # Optimization Methods
 
+## Numpy backend
 
-## No-Negative Least Squares
+### No-Negative Least Squares (`nnls`)
 
 | Parameter            | Type   | Description                                                                  |
 |----------------------|--------|------------------------------------------------------------------------------|
@@ -11,14 +12,17 @@
 | `const`              | float  | The constant to add in the nnls optimization to enforce convex optimization. |
 
 
-## Projected Gradient Descent
+### Projected Gradient Descent (`pgd`)
 
 | Parameter            | Type  | Description                                                        |
 |----------------------|-------|--------------------------------------------------------------------|
 | `max_iter_optimizer` | int   | The maximum number of iterations for optimizing the learning rate. |
 | `beta`               | float | The decay factor for the learning rate.                            |
 
-## JAX Gradient Descent
+## JAX backend
+
+### Automatic Gradient Descent (`autogd`)
+
 
 | Parameter          | Type                                | Description                                                                                                                 |
 |--------------------|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|

@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-import optax
 from custom_inherit import doc_inherit
-from jax import grad
-from jax import nn as jnn
-from jax import numpy as jnp
 
 from ..utils import nnls
 from ._base import AABase
@@ -60,7 +56,7 @@ class AABase_3(AABase):
         for i, j in enumerate(ind):
             A[i, j] = 1
 
-        self.A_ = A
+        return A
 
     def _init_B(self, X):
         B = np.zeros((self.n_archetypes, X.shape[0]), dtype=np.float64)
@@ -72,7 +68,7 @@ class AABase_3(AABase):
         for i, j in enumerate(ind):
             B[i, j] = 1
 
-        self.B_ = B
+        return B
 
     def _optim_A(self, X):
         pass
@@ -89,8 +85,8 @@ class AABase_3(AABase):
 
     def fit(self, X, y=None, **fit_params):
         # Initialize coefficients
-        self._init_A(X)
-        self._init_B(X)
+        self.A_ = self._init_A(X)
+        self.B_ = self._init_B(X)
 
         self._compute_archetypes(X)
 
@@ -106,8 +102,8 @@ class AABase_3(AABase):
                 print(f"Iteration {i}/{self.max_iter}: RSS = {rss}")
 
             # Optimize coefficients
-            self._optim_A(X)
-            self._optim_B(X)
+            self.A_ = self._optim_A(X)
+            self.B_ = self._optim_B(X)
 
             self._compute_archetypes(X)
 
@@ -126,6 +122,9 @@ class AABase_3(AABase):
 
     def transform(self, X):
         return self._optim_A(X)
+
+    def fit_transform(self, X, y=None, **fit_params):
+        return self.fit(X, y, **fit_params).transform(X)
 
 
 @doc_inherit(parent=AABase_3, style="numpy_with_merge")
@@ -166,7 +165,7 @@ class AA_3(AABase_3):
         # Check params for the optimization method
         if self.method == "nnls":
             self.method_c_: AAOptimizer = nnls_optimizer
-            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer")
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 100)
             self.const = self.method_kwargs.get("const", 100.0)
         elif self.method == "pgd":
             self.method_c_: AAOptimizer = pgd_optimizer
@@ -174,22 +173,14 @@ class AA_3(AABase_3):
             self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 10)
             self.step_size_A_ = 1.0
             self.step_size_B_ = 1.0
-        elif self.method == "jax":
-            self.method_c_: AAOptimizer = jax_optimizer
-            self.optimizer = self.method_kwargs.get("optimizer", "sgd")
-            self.optimizer_kwargs = self.method_kwargs.get(
-                "optimizer_kwargs", {"learning_rate": 1e-3}
-            )
-            if not isinstance(self.optimizer, optax.GradientTransformation):
-                self.optimizer = getattr(optax, self.optimizer)
 
         # TODO: Check if params are valid for the optimization method
 
     def _init_B(self, X):
-        self.method_c_.B_init(self, X)
+        return self.method_c_.B_init(self, X)
 
     def _init_A(self, X):
-        self.method_c_.A_init(self, X)
+        return self.method_c_.A_init(self, X)
 
     def _optim_A(self, X):
         return self.method_c_.A_optimize(self, X)
@@ -203,24 +194,24 @@ class AA_3(AABase_3):
 
 # Non-Negative Least Squares
 def _nnls_init_A(self, X):
-    super(type(self), self)._init_A(X)
+    return super(type(self), self)._init_A(X)
 
 
 def _nnls_init_B(self, X):
-    super(type(self), self)._init_B(X)
+    return super(type(self), self)._init_B(X)
 
 
 def _nnls_optim_B(self, X):
     self.archetypes_ = np.linalg.pinv(self.A_) @ X
     B_ = self.archetypes_
     X_ = X
-    self.B_ = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer)
+    return nnls(B_, X_, max_iter=self.max_iter_optimizer)
 
 
 def _nnls_optim_A(self, X):
     B_ = X
     X_ = self.archetypes_
-    self.A_ = nnls(B_, X_, max_iter=self.max_iter_step_size_optimizer)
+    return nnls(B_, X_, max_iter=self.max_iter_optimizer)
 
 
 def _nnls_fit(self, X, y=None, **fit_params):
@@ -238,11 +229,11 @@ nnls_optimizer = AAOptimizer(
 
 # Projected Gradient Descent (Closed Form)
 def _pgd_init_A(self, X):
-    super(type(self), self)._init_A(X)
+    return super(type(self), self)._init_A(X)
 
 
 def _pgd_init_B(self, X):
-    super(type(self), self)._init_B(X)
+    return super(type(self), self)._init_B(X)
 
 
 def _pgd_optim_A(self, X):
@@ -277,7 +268,7 @@ def _pgd_optim_A(self, X):
         self.step_size_A_ *= self.beta_
 
     self.GA_ = GS_.T
-    self.A_ = S_.T
+    return S_.T
 
 
 def _pgd_optim_B(self, X):
@@ -311,7 +302,7 @@ def _pgd_optim_B(self, X):
         self.step_size_B_ *= self.beta_
 
     self.GB_ = GC_.T
-    self.B_ = C_.T
+    return C_.T
 
 
 def _pgd_fit(self, X, y=None, **fit_params):
@@ -329,54 +320,4 @@ pgd_optimizer = AAOptimizer(
     A_optimize=_pgd_optim_A,
     B_optimize=_pgd_optim_B,
     fit=_pgd_fit,
-)
-
-
-# Gradient Descent (JAX)
-def _jax_init_A(self, X):
-    super(type(self), self)._init_A(X)
-    self.A_opt_ = jnp.asarray(self.A_, copy=True)
-    self.A_ = self.A_opt_
-    self.optimizer_A_state = self.optimizer_A.init(self.A_opt_)
-
-
-def _jax_init_B(self, X):
-    super(type(self), self)._init_B(X)
-    self.B_opt_ = jnp.asarray(self.B_, copy=True)
-    self.B_ = self.B_opt_
-    self.optimizer_B_state = self.optimizer_B.init(self.B_opt_)
-
-
-def jax_optim_A(self, X):
-    grad_A = grad(_jax_loss, argnums=1)(X, self.A_, self.B_)
-    updates_A, self.optimizer_A_state = self.optimizer_A.update(grad_A, self.optimizer_A_state)
-    self.A_opt_ = optax.apply_updates(self.A_opt_, updates_A)
-    self.A_ = jnn.softmax(self.A_opt_, axis=1)
-
-
-def jax_optim_B(self, X):
-    grad_B = grad(_jax_loss, argnums=2)(X, self.A_, self.B_)
-    updates_B, self.optimizer_B_state = self.optimizer_B.update(grad_B, self.optimizer_B_state)
-    self.B_opt_ = optax.apply_updates(self.B_opt_, updates_B)
-    self.B_ = jnn.softmax(self.B_opt_, axis=1)
-
-
-def _jax_fit(self, X, y=None, **fit_params):
-    # Pre-computations for optimization
-    self.optimizer_A = self.optimizer(**self.optimizer_kwargs)
-    self.optimizer_B = self.optimizer(**self.optimizer_kwargs)
-
-    return super(type(self), self).fit(X, y, **fit_params)
-
-
-def _jax_loss(X, A, B):
-    return optax.l2_loss(X - A @ B @ X).sum()
-
-
-jax_optimizer = AAOptimizer(
-    A_init=_jax_init_A,
-    B_init=_jax_init_B,
-    A_optimize=jax_optim_A,
-    B_optimize=jax_optim_B,
-    fit=_jax_fit,
 )

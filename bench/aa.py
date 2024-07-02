@@ -2,7 +2,7 @@ from time import time
 
 import numpy as np
 
-from archetypes.sklearn import AA
+from archetypes.numpy import AA
 
 data = np.random.normal(0, 4, 2_000).reshape(-1, 2)
 
