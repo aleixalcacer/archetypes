@@ -76,6 +76,7 @@ def sort_by_archetype_similarity(data, alphas, archetypes):
         The dataset in the archetypal spaces.
     archetypes: list of array-like
         The archetypes.
+
     Returns
     -------
     data: array-like
