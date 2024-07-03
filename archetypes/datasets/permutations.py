@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..utils import check_generator
+from ..utils import check_generator_numpy
 
 
 def permute_dataset(data, perms=None) -> (np.array, dict):
@@ -20,8 +20,12 @@ def permute_dataset(data, perms=None) -> (np.array, dict):
     info: dict
         The information about the permutation.
     """
+    data = np.asarray(data)
+
     if perms is None:
         perms = [np.arange(s) for s in data.shape]
+    else:
+        perms = [np.asarray(perm) for perm in perms]
 
     # n = data.ndim
 
@@ -55,7 +59,8 @@ def shuffle_dataset(data, ndim=None, generator=None):
         The information about the shuffling.
     """
 
-    generator = check_generator(generator)
+    data = np.asarray(data)
+    generator = check_generator_numpy(generator)
 
     perms = [np.arange(s) for s in data.shape[:ndim]]
     [generator.shuffle(indices_i) for indices_i in perms]
@@ -84,6 +89,9 @@ def sort_by_archetype_similarity(data, alphas, archetypes):
     info: dict
         The information about the sorting.
     """
+    data = np.asarray(data)
+    alphas = [np.asarray(alpha) for alpha in alphas]
+    archetypes = np.asarray(archetypes)
 
     ndim = len(alphas)
 
@@ -138,6 +146,9 @@ def sort_by_labels(data, labels):
     info: dict
         The information about the sorting.
     """
+
+    data = np.asarray(data)
+    labels = [np.asarray(label) for label in labels]
 
     ndim = len(labels)
 

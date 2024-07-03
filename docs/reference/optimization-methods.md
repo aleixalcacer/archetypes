@@ -28,3 +28,13 @@
 |--------------------|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | `optimizer`        | str or optax.GradientTransformation | The optimization method to use. See the [available optimizers](https://optax.readthedocs.io/en/latest/api/optimizers.html). |
 | `optimizer_kwargs` | dict                                | The arguments to pass to initialize the optimization method.                                                                |
+
+
+## Torch backend
+
+### Automatic Gradient Descent (`autogd`)
+
+| Parameter          | Type                                | Description                                                                                                          |
+|--------------------|-------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `optimizer`        | str or torch.optim.Optimizer        | The optimization method to use. See the [available optimizers](https://pytorch.org/docs/stable/optim.html#Algorithms |
+| `optimizer_kwargs` | dict                                | The arguments to pass to initialize the optimization method.                                                         |

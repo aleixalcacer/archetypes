@@ -36,6 +36,7 @@ dependencies = [
     "matplotlib",
     "jax",
     "optax",
+    "torch",
     "custom_inherit"
 ]
 

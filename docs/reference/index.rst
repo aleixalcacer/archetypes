@@ -35,6 +35,18 @@ JAX backend
    AA
    BiAA
 
+Torch backend
+~~~~~~~~~~~~~
+
+.. currentmodule:: archetypes.torch
+.. autosummary::
+   :toctree: _autosummary/torch
+   :recursive:
+   :template: class.rst
+
+   AA
+   BiAA
+
 
 Visualization
 -------------
