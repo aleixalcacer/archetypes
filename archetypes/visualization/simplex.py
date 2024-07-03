@@ -63,6 +63,8 @@ def simplex(
     if not ax:
         ax = plt.gca()
 
+    points = np.asarray(points)
+
     n = points.shape[1]
 
     # Set the background

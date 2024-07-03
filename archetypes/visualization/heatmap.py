@@ -32,6 +32,8 @@ def heatmap(data, labels=None, n_archetypes=None, scores=None, ax=None, **kwargs
         The axes.
     """
 
+    data = np.asarray(data)
+    scores = [np.asarray(s) for s in scores] if scores is not None else None
     # check data is 2D
     if data.ndim != 2:
         raise ValueError(f"data must be 2D, got {data.ndim}D")

@@ -29,6 +29,7 @@ def stacked_bar(
     if not ax:
         ax = plt.gca()
 
+    points = np.asarray(points)
     m = points.shape[0]
     n = points.shape[1]
 
