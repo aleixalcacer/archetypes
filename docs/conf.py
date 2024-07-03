@@ -35,6 +35,7 @@ extensions = [
     "myst_nb",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinxcontrib.bibtex",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -94,3 +95,8 @@ intersphinx_mapping = {
 # Autosummary
 
 autosummary_generate = True
+
+# Sphinx Bibtex
+
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "unsrt"

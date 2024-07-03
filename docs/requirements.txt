@@ -3,3 +3,4 @@ pydata-sphinx-theme
 numpydoc
 myst-nb
 jupyter
+sphinxcontrib-bibtex
