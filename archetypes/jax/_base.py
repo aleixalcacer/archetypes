@@ -21,6 +21,7 @@ class AABase(BaseEstimator, TransformerMixin):
     init : str or callable, default='uniform'
         Method used to initialize the archetypes. If a string, it must be one of
         the following: 'uniform', 'furthest_sum', 'furthest_first' or 'aa_plus_plus'.
+        See :ref:`initialization-methods`.
     init_kwargs : dict, default=None
         Additional keyword arguments to pass to the initialization method.
     save_init : bool, default=False
@@ -255,6 +256,7 @@ class BiAABase(BaseEstimator, TransformerMixin):
     init : str or callable, default='uniform'
         Method used to initialize the archetypes. If a string, it must be one of
         the following: 'uniform', 'furthest_sum', 'furthest_first' or 'aa_plus_plus'.
+        See :ref:`initialization-methods`.
     init_kwargs : dict, default=None
         Additional keyword arguments to pass to the initialization method.
     save_init : bool, default=False

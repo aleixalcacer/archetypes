@@ -28,7 +28,6 @@ JAX backend
 
 .. currentmodule:: archetypes.jax
 .. autosummary::
-   :caption: API Reference
    :toctree: _autosummary/jax
    :recursive:
    :template: class.rst
@@ -74,4 +73,5 @@ Datasets
    :maxdepth: 1
    :hidden:
 
+   initialization-methods
    optimization-methods
