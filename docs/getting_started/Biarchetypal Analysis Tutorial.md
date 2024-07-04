@@ -124,6 +124,6 @@ Plot the loss to visualize the convergence of the model.
 
 ## Example
 
-Click the link to see the [Full Example](docs/getting_started/examples/biaa.ipynb).
+Click the link to see the [Full Example](https://github.com/aleixalcacer/archetypes/blob/c8423656725ed89ccb299a21acbe336b47707574/docs/getting_started/examples/biaa.ipynb).
 
 By following this tutorial, you should be able to perform Biarchetypal Analysis using the Archetypes package, visualize the generated archetypes, and understand the results effectively. If you have any questions or encounter any issues, please don't hesitate to reach out to us. We hope you find this tutorial helpful in learning about BiAA and using the Archetypes package!
