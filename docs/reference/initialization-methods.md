@@ -30,8 +30,3 @@ The second archetype is chosen based on a distribution that assigns probabilitie
 from the first archetype.
 Subsequent archetypes are selected using a probability distribution where the likelihood of choosing a
 point is proportional to the minimum distance to the convex hull of the already chosen archetypes.
-
-
-## References
-```{bibliography}
-```

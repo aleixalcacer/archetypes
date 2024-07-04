@@ -4,7 +4,7 @@ The Archetypes package is designed to provide a set of algorithms for performing
 
 ## What is Archetypal Analysis?
 
-Archetypal Analysis is a data analysis method that aims to identify a small number of archetypes, which are extreme examples of the data set. These archetypes can be used to describe the data set and to perform dimensionality reduction, outlier detection, and clustering.
+Archetypal Analysis is a data analysis method proposed by {cite:t}`cutler_archetypal_1994` that aims to identify a small number of archetypes, which are extreme examples of the data set. These archetypes can be used to describe the data set and to perform dimensionality reduction, outlier detection, and clustering.
 
 AA is based on the concept of convex hulls, which are the smallest convex shapes that can contain all the observations in a dataset. The archetypes are the vertices of these convex hulls, which represent the most extreme and typical points in the data. AA seeks to find the smallest set of archetypes that can explain the convex hull of the data.
 
