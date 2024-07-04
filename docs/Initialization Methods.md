@@ -1,24 +1,3 @@
-# Package Overview
-
-The Archetypes package provides algorithms for performing Archetypal Analysis (AA) on various data types (NumPy arrays, Pandas dataframes, PyTorch tensors) and includes visualization tools for the results.
-
-
-# What is Archetypal Analysis?
-
-Archetypal Analysis identifies a small number of archetypes, which are extreme examples of a dataset. These archetypes help in dimensionality reduction, outlier detection, and clustering by representing the most extreme points in the data.
-
-
-# Benefits of Archetypal Analysis
-
-**Dimensionality Reduction:** Reduces data dimensionality by identifying key archetypes.
-
-**Interpretability:** Provides insights into data patterns through characteristic examples.
-
-**Outlier Detection:** Identifies observations that cannot be well represented by archetypes.
-
-**Clustering:** Partitions data into groups represented by different subsets of archetypes.
-
-
 # Initialization Methods
 
 ## AA (Archetypal Analysis):
@@ -82,8 +61,6 @@ Similar structure to AA but adapted for N-archetypal analysis.
 
 ## check_generator
 
-Description:
-
 **Description:** Utility function to check the validity of a generator.
 
 
@@ -93,7 +70,7 @@ Description:
 
 **Description:** Generates a simplex visualization.
 
-### Usage Example:
+**Usage Example:**
 
 simplex(data)
 
@@ -101,7 +78,7 @@ simplex(data)
 
 **Description:** Generates a bisimplex visualization.
 
-### Usage Example:
+**Usage Example:**
 
 bisimplex(data)
 
@@ -109,7 +86,7 @@ bisimplex(data)
 
 **Description:** Generates a heatmap visualization.
 
-### Usage Example:
+**Usage Example:**
 
 heatmap(data)
 
