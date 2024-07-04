@@ -70,6 +70,6 @@ Visualize the permuted similarity degrees using simplex and stacked bar visualiz
 
 ## Example 
 
-Click the link to see the [Full Example](docs/getting_started/examples/aa.ipynb).
+Click the link to see the [Full Example]([docs/getting_started/examples/aa.ipynb](https://github.com/aleixalcacer/archetypes/blob/c8423656725ed89ccb299a21acbe336b47707574/docs/getting_started/examples/aa.ipynb)).
 
 By following this tutorial, you should be able to perform Archetypal Analysis using the Archetypes package, visualize the loaded data and the identified archetypes, and understand the results effectively. If you have any questions or encounter any issues, please don't hesitate to reach out to us. We hope you find this tutorial helpful in learning about AA and using the Archetypes package!
