@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from archetypes import AA, BiAA
+from archetypes.numpy._projection import unit_simplex_proj, l1_normalize_proj
 
 # create a test using pytest
 
@@ -13,6 +14,8 @@ from archetypes import AA, BiAA
         ("nnls", {"max_iter_optimizer": 100, "const": 10}),
         ("pgd", None),
         ("pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
+        ("pseudo_pgd", None),
+        ("pseudo_pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
     ],
 )
 def test_AA(method, method_kwargs):
@@ -49,3 +52,12 @@ def test_BiAA(method, method_kwargs):
         assert trans_data[i].shape == (shape[i], n_archetypes[i])
         assert np.allclose(model.similarity_degree_[i].sum(axis=1), 1.0)
         assert np.allclose(trans_data[i].sum(axis=1), 1.0)
+
+
+@pytest.mark.parametrize("proj_func", [unit_simplex_proj, l1_normalize_proj])
+def test_projection(proj_func):
+    x = np.random.uniform(size=(100, 4))
+    proj_func(x)
+    assert np.all(x >= 0)
+    assert np.all(x <= 1)
+    assert np.allclose(x.sum(axis=1), 1.0)
