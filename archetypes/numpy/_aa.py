@@ -314,7 +314,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
     loss_list = [
         np.inf,
     ]
-    for i in range(max_iter):
+    for i in range(1, max_iter + 1):
         rss = np.linalg.norm(X - A @ archetypes) ** 2
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
@@ -435,7 +435,7 @@ def _pgd_like_optimize_aa(
     step_size_A = step_size
     step_size_B = step_size
 
-    for i in range(max_iter):
+    for i in range(1, max_iter + 1):
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
         if verbose and i % 10 == 0:
