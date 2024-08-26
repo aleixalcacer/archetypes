@@ -199,6 +199,10 @@ class AA(TransformerMixin, BaseEstimator):
         X = np.ascontiguousarray(X)
         archetypes = self.archetypes_
 
+        if self.n_archetypes_ == 1:
+            n_samples = X.shape[0]
+            return np.ones((n_samples, self.n_archetypes_), dtype=X.dtype)
+
         if self.method == "nnls":
             transform_func = nnls_transform
         elif self.method == "pgd":
@@ -233,45 +237,63 @@ class AA(TransformerMixin, BaseEstimator):
         self._check_params_vs_data(X)
         X = np.ascontiguousarray(X)
 
-        if self.method == "nnls":
-            fit_transform_func = nnls_fit_transform
-        elif self.method == "pgd":
-            fit_transform_func = pgd_fit_transform
-        elif self.method == "pseudo_pgd":
-            fit_transform_func = pseudo_pgd_fit_transform
+        if self.n_archetypes == 1:
+            n_samples = X.shape[0]
+            archetypes_ = np.mean(X, axis=0)
+            B_ = np.full((self.n_archetypes, n_samples), 1 / n_samples, dtype=X.dtype)
+            A_ = np.ones((n_samples, self.n_archetypes), dtype=X.dtype)
+            best_rss = np.linalg.norm(X - archetypes_) ** 2
+            n_iter_ = 0
+            loss_ = [
+                best_rss,
+            ]
 
-        method_kwargs = {} if self.method_kwargs is None else self.method_kwargs
+        else:
+            if self.method == "nnls":
+                fit_transform_func = nnls_fit_transform
+            elif self.method == "pgd":
+                fit_transform_func = pgd_fit_transform
+            elif self.method == "pseudo_pgd":
+                fit_transform_func = pseudo_pgd_fit_transform
 
-        rng = check_random_state(self.random_state)
+            method_kwargs = {} if self.method_kwargs is None else self.method_kwargs
 
-        best_rss = np.inf
-        for i in range(self.n_init):
-            A, B, archetypes = self._init_archetypes(X, rng)
+            rng = check_random_state(self.random_state)
 
-            if self.save_init:
-                self.B_init_ = B.copy()
-                self.archetypes_init_ = archetypes.copy()
+            best_rss = np.inf
+            for i in range(self.n_init):
+                A, B, archetypes = self._init_archetypes(X, rng)
 
-            A, B, archetypes, n_iter, loss, _ = fit_transform_func(
-                X,
-                A,
-                B,
-                archetypes,
-                max_iter=self.max_iter,
-                tol=self.tol,
-                verbose=self.verbose,
-                **method_kwargs,
-            )
+                if self.save_init:
+                    self.B_init_ = B.copy()
+                    self.archetypes_init_ = archetypes.copy()
 
-            rss = loss[-1]
-            if i==0 or rss < best_rss:
-                best_rss = rss
-                self.A_ = A
-                self.B_ = B
-                self.archetypes_ = archetypes
-                self.n_iter_ = n_iter
-                self.loss_ = loss
-                self.rss_ = rss
+                A, B, archetypes, n_iter, loss, _ = fit_transform_func(
+                    X,
+                    A,
+                    B,
+                    archetypes,
+                    max_iter=self.max_iter,
+                    tol=self.tol,
+                    verbose=self.verbose,
+                    **method_kwargs,
+                )
+
+                rss = loss[-1]
+                if i == 0 or rss < best_rss:
+                    best_rss = rss
+                    A_ = A
+                    B_ = B
+                    archetypes_ = archetypes
+                    n_iter_ = n_iter
+                    loss_ = loss
+
+        self.A_ = A_
+        self.B_ = B_
+        self.archetypes_ = archetypes_
+        self.n_iter_ = n_iter_
+        self.loss_ = loss_
+        self.rss_ = best_rss
 
         self.similarity_degree_ = self.A_
         self.archetypes_similarity_degree_ = self.B_
@@ -486,7 +508,7 @@ def _pgd_like_update_A_inplace(
     A_grad -= XXtBt
     if pseudo_pgd:
         # TODO: malloc here!
-        A_grad -= np.expand_dims(np.einsum("ij,ij->i", A, A_grad),axis=1)
+        A_grad -= np.expand_dims(np.einsum("ij,ij->i", A, A_grad), axis=1)
         project = l1_normalize_proj
     else:
         project = unit_simplex_proj
