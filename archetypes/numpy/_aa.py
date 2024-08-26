@@ -9,6 +9,7 @@ from sklearn.base import (
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.extmath import squared_norm
 
 from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 from ..utils import nnls
@@ -242,7 +243,7 @@ class AA(TransformerMixin, BaseEstimator):
             archetypes_ = np.mean(X, axis=0)
             B_ = np.full((self.n_archetypes, n_samples), 1 / n_samples, dtype=X.dtype)
             A_ = np.ones((n_samples, self.n_archetypes), dtype=X.dtype)
-            best_rss = np.linalg.norm(X - archetypes_) ** 2
+            best_rss = squared_norm(X - archetypes_)
             n_iter_ = 0
             loss_ = [
                 best_rss,
@@ -315,7 +316,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
         np.inf,
     ]
     for i in range(1, max_iter + 1):
-        rss = np.linalg.norm(X - A @ archetypes) ** 2
+        rss = squared_norm(X - A @ archetypes)
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
         if verbose and i % 10 == 0:  # Verbose mode (print RSS)
@@ -427,7 +428,7 @@ def _pgd_like_optimize_aa(
     A_new = np.empty_like(A)
     B_new = np.empty_like(B)
 
-    rss = np.linalg.norm(ABX) ** 2
+    rss = squared_norm(ABX)
     loss_list = [
         np.inf,
     ]
@@ -523,7 +524,7 @@ def _pgd_like_update_A_inplace(
         project(A_new)
         ABX = np.matmul(A_new, BX, out=ABX)
         ABX -= X
-        rss_new = np.linalg.norm(ABX) ** 2
+        rss_new = squared_norm(ABX)
         # if we make any improvement, break
         improved = rss_new < rss
         if improved:
@@ -576,7 +577,7 @@ def _pgd_like_update_B_inplace(
         project(B_new)
         ABX = np.linalg.multi_dot([A, B_new, X], out=ABX)
         ABX -= X
-        rss_new = np.linalg.norm(ABX) ** 2
+        rss_new = squared_norm(ABX)
         improved = rss_new < rss
         if improved:
             step_size_B /= beta
