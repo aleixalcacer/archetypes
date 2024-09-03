@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from archetypes import AA, BiAA
+from archetypes import AA, ADA, BiAA
 
 # create a test using pytest
 
@@ -15,12 +15,19 @@ from archetypes import AA, BiAA
         ("pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
     ],
 )
-def test_AA(method, method_kwargs):
+@pytest.mark.parametrize(
+    "algorithm",
+    [
+        AA,
+        ADA,
+    ],
+)
+def test_AA(method, method_kwargs, algorithm):
     shape = (100, 2)
     data = np.random.uniform(size=(shape))
 
     n_archetypes = 4
-    model = AA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = algorithm(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
 
     trans_data = model.fit_transform(data)
 
