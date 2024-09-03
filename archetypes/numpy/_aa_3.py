@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 from custom_inherit import doc_inherit
 
-from ..utils import nnls
+from ..utils import nnls, pmc
 from ._base import AABase
 
 
@@ -319,5 +319,94 @@ pgd_optimizer = AAOptimizer(
     B_init=_pgd_init_B,
     A_optimize=_pgd_optim_A,
     B_optimize=_pgd_optim_B,
+    fit=_pgd_fit,
+)
+
+
+# ADA
+
+
+@doc_inherit(parent=AABase_3, style="numpy_with_merge")
+class ADA_3(AABase_3):
+    """
+    Archetypoid Analysis s.t. |X - ABX|_2^2 is minimized.
+    """
+
+    def __init__(
+        self,
+        n_archetypes,
+        max_iter=300,
+        tol=1e-4,
+        init="uniform",
+        init_kwargs=None,
+        save_init=False,
+        verbose=False,
+        random_state=None,
+        method="nnls",
+        method_kwargs=None,
+    ):
+        super().__init__(
+            n_archetypes=n_archetypes,
+            max_iter=max_iter,
+            tol=tol,
+            init=init,
+            init_kwargs=init_kwargs,
+            save_init=save_init,
+            method=method,
+            method_kwargs=method_kwargs,
+            verbose=verbose,
+            random_state=random_state,
+        )
+
+        self._check_parameters_()
+
+    def _check_parameters_(self):
+        # Check params for the optimization method
+        if self.method == "nnls":
+            self.method_c_: AAOptimizer = nnls_ada_optimizer
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 100)
+            self.const = self.method_kwargs.get("const", 100.0)
+        elif self.method == "pgd":
+            self.method_c_: AAOptimizer = pgd_ada_optimizer
+            self.beta_ = self.method_kwargs.get("beta", 0.5)
+            self.max_iter_optimizer = self.method_kwargs.get("max_iter_optimizer", 10)
+            self.step_size_A_ = 1.0
+            self.step_size_B_ = 1.0
+
+        # TODO: Check if params are valid for the optimization method
+
+    def _init_B(self, X):
+        return self.method_c_.B_init(self, X)
+
+    def _init_A(self, X):
+        return self.method_c_.A_init(self, X)
+
+    def _optim_A(self, X):
+        return self.method_c_.A_optimize(self, X)
+
+    def _optim_B(self, X):
+        return self.method_c_.B_optimize(self, X)
+
+    def fit(self, X, y=None, **fit_params):
+        return self.method_c_.fit(self, X, y, **fit_params)
+
+
+def _ada_optim_B(self, X):
+    return pmc(self.n_archetypes, X, self.A_, self.B_)
+
+
+nnls_ada_optimizer = AAOptimizer(
+    A_init=_nnls_init_A,
+    B_init=_nnls_init_B,
+    A_optimize=_nnls_optim_A,
+    B_optimize=_ada_optim_B,
+    fit=_nnls_fit,
+)
+
+pgd_ada_optimizer = AAOptimizer(
+    A_init=_pgd_init_A,
+    B_init=_pgd_init_B,
+    A_optimize=_pgd_optim_A,
+    B_optimize=_ada_optim_B,
     fit=_pgd_fit,
 )

@@ -21,6 +21,7 @@ Numpy backend
    :template: class.rst
 
    AA
+   ADA
    BiAA
 
 JAX backend

@@ -76,3 +76,31 @@ def partial_arch_einsum(param_tensors, tensor, index: []):
     equation = "".join(equation) + "".join(inner_symbols) + "->" + "".join(res_equation)
 
     return contract(equation, *param_tensors, tensor, optimize="auto")
+
+
+def pmc(n_components, X, A, B):
+    """
+    Partitioning Around Components
+    """
+    components = B @ X
+    components_index = np.argmax(B, axis=1)
+
+    loss = np.linalg.norm(X - A @ components, "fro") ** 2
+    combination = None
+    for k in range(n_components):
+        if k != 0:
+            components[k - 1] = X[components_index[k - 1]]
+        for i in range(X.shape[0]):
+            components[k] = X[i]
+            loss_i = np.linalg.norm(X - A @ components, "fro") ** 2
+            if loss_i < loss:
+                loss = loss_i
+                combination = {"k": k, "i": i}
+
+    if combination:
+        components_index[combination["k"]] = combination["i"]
+
+    B = np.zeros((n_components, X.shape[0]))
+    B[np.arange(n_components), components_index] = 1
+
+    return B
