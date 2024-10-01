@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "setuptools"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -13,7 +13,8 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "BSD-3-Clause"}
 authors = [
-    {name = "Aleix Alcacer", email = "aleixalcacer@gmail.com"}
+    {name = "Aleix Alcacer", email = "aleixalcacer@gmail.com"},
+    {name = "Zanchenling Wang", email = "wangzancl@gmail.com"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3.9",
@@ -31,10 +32,10 @@ classifiers = [
     "Topic :: Scientific/Engineering"
 ]
 dependencies = [
-    "numpy",
-    "scikit-learn",
-    "scipy<1.12",  # nnls issue, it will be fixed in 1.15
-    "matplotlib",
+    "numpy>=1.25",
+    "scikit-learn>=1.4",
+    "scipy>=1.8,<1.12",  # nnls issue, it will be fixed in 1.15
+    "matplotlib>=3.8",
     "jax",
     "optax",
     "torch",
@@ -54,6 +55,9 @@ dependencies = [
     "isort",
     "pylint",
     "jupyter",
+    "setuptools",
+    "numpy>=2.0",
+    "Cython>=3.0",
 ]
 
 [tool.hatch.build.hooks.cython]
