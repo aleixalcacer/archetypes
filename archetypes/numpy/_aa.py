@@ -1,19 +1,14 @@
 from numbers import Integral, Real
+
 import numpy as np
-from sklearn.base import (
-    BaseEstimator,
-    TransformerMixin,
-    ClassNamePrefixFeaturesOutMixin,
-    _fit_context,
-)
+from sklearn.base import BaseEstimator, TransformerMixin, _fit_context
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
-from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.extmath import squared_norm
+from sklearn.utils.validation import check_is_fitted
 
-from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 from ..utils import nnls
-
+from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 from ._projection import l1_normalize_proj, unit_simplex_proj
 
 
