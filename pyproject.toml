@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "setuptools", "numpy>=2.0", "Cython>=3.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -32,9 +32,9 @@ classifiers = [
     "Topic :: Scientific/Engineering"
 ]
 dependencies = [
-    "numpy>=2.0",
+    "numpy>=1.25",
     "scikit-learn>=1.4",
-    "scipy>=1.13",  # nnls issue, it will be fixed in 1.15
+    "scipy>=1.8,<1.12",  # nnls issue, it will be fixed in 1.15
     "matplotlib>=3.8",
     "jax",
     "optax",
@@ -55,9 +55,6 @@ dependencies = [
     "isort",
     "pylint",
     "jupyter",
-    "setuptools",
-    "numpy>=2.0",
-    "Cython>=3.0",
 ]
 
 [tool.hatch.build.hooks.cython]
