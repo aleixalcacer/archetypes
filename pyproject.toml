@@ -34,7 +34,7 @@ classifiers = [
 dependencies = [
     "numpy>=2.0",
     "scikit-learn>=1.4",
-    "git+https://github.com/scipy/scipy.git",  # nnls issue, it will be fixed in 1.15
+    "scipy @ git+https://github.com/scipy/scipy@main",  # nnls issue, it will be fixed in 1.15
     "matplotlib>=3.8",
     "jax",
     "optax",
