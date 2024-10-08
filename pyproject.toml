@@ -32,7 +32,7 @@ classifiers = [
     "Topic :: Scientific/Engineering"
 ]
 dependencies = [
-    "numpy>=1.25",
+    "numpy>=2.0",
     "scikit-learn>=1.4",
     "scipy>=1.8,<1.12",  # nnls issue, it will be fixed in 1.15
     "matplotlib>=3.8",
