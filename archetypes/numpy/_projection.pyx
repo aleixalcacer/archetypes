@@ -2,9 +2,10 @@
 import numpy as np
 
 cimport cython
+from cpython.mem cimport PyMem_Free, PyMem_Malloc
 from cython cimport floating
 from libc.math cimport fmax
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
+
 
 def l1_normalize_proj(floating[:,::1] X not None):
     """first non-negative orthant projection, then l1 normalization."""
@@ -27,7 +28,7 @@ def l1_normalize_proj(floating[:,::1] X not None):
 
 def unit_simplex_proj(floating[:,::1] X not None):
     """Condat's projection onto the unit simplex."""
-    
+
     cdef:
         Py_ssize_t m = X.shape[0], n = X.shape[1]
         floating *aux = <floating *> PyMem_Malloc(n * sizeof(floating))
@@ -50,7 +51,7 @@ def unit_simplex_proj(floating[:,::1] X not None):
                     tau = X[j, i] - 1.
                     auxlengthold = auxlength - 1
                 auxlength += 1
-        
+
         if auxlengthold >= 0:
             auxlengthold += 1
             auxlength -= auxlengthold
@@ -77,7 +78,7 @@ def unit_simplex_proj(floating[:,::1] X not None):
 
         for i in range(n):
             X[j, i] = fmax(X[j, i] - tau, 0.0)
-        
+
     PyMem_Free(aux0)
 
     return

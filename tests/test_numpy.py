@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from archetypes import AA, BiAA
-from archetypes.numpy._projection import unit_simplex_proj, l1_normalize_proj
+from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
 
 # create a test using pytest
 
