@@ -24,8 +24,11 @@ def test_AA(method, method_kwargs):
 
     n_archetypes = 4
     model = AA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
-
     trans_data = model.fit_transform(data)
+
+    model = AA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = model.fit(data)
+    trans_data = model.transform(data)
 
     assert trans_data.shape == (shape[0], n_archetypes)
     assert np.allclose(model.similarity_degree_.sum(axis=1), 1.0)
@@ -45,8 +48,11 @@ def test_BiAA(method, method_kwargs):
 
     n_archetypes = (5, 4)
     model = BiAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
-
     trans_data = model.fit_transform(data)
+
+    model = BiAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = model.fit(data)
+    trans_data = model.transform(data)
 
     for i in range(len(n_archetypes)):
         assert trans_data[i].shape == (shape[i], n_archetypes[i])
