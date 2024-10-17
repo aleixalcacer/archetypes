@@ -4,13 +4,19 @@
 
 ## Overview
 
-### No-Negative Least Squares
+### Non-Negative Least Squares
 
 {cite:p}`cutler_archetypal_1994`
 
-### Projected Gradient Descent
+### Pseudo Projected Gradient Descent
 
 {cite:p}`morup_archetypal_2012`
+
+### Projected Graident Descent
+
+Like Pseudo-PGD, but performs orthogonal projection onto unit simplex
+
+{cite:p}`condat2016`
 
 ### Automatic Gradient Descent
 
@@ -20,19 +26,20 @@
 
 ### Numpy backend
 
-* No-Negative Least Squares (`nnls`):
+* Non-Negative Least Squares (`nnls`):
 
-    | Parameter            | Type   | Description                                                                  |
-    |----------------------|--------|------------------------------------------------------------------------------|
-    | `max_iter_optimizer` | int    | The maximum number of iterations in the nnls optimization.                   |
-    | `const`              | float  | The constant to add in the nnls optimization to enforce convex optimization. |
+    | Parameter            | Type   |  Default   | Description                                                                               |
+    |----------------------|--------|------------|-------------------------------------------------------------------------------------------|
+    | `max_iter_optimizer` | int    |    100     | The maximum number of iterations in the nnls optimization, passed to `scipy.optimize.nnls`|
+    | `const`              | float  |   100.0    | The penalization constant to add in the nnls optimization to enforce convex optimization. |
 
 * Projected Gradient Descent (`pgd`):
 
-    | Parameter            | Type  | Description                                                        |
-    |----------------------|-------|--------------------------------------------------------------------|
-    | `max_iter_optimizer` | int   | The maximum number of iterations for optimizing the learning rate. |
-    | `beta`               | float | The decay factor for the learning rate.                            |
+    | Parameter            | Type  |  Default   | Description                                                        |
+    |----------------------|-------|------------|--------------------------------------------------------------------|
+    | `max_iter_optimizer` | int   |     10     | The maximum number of iterations for optimizing the learning rate. |
+    | `beta`               | float |    0.5     | The decay factor for the learning rate.                            |
+    | `step_size`          | float |    1.0     | The initial learning rate at the beginning of optimization.        |
 
 ### JAX backend
 
