@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "setuptools", "numpy>=2.0", "Cython>=3.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -11,9 +11,10 @@ dynamic = ["version"]
 description = "A scikit-learn compatible Python package for archetypal analysis"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "BSD-3-Clause"
+license = { text = "BSD-3-Clause"}
 authors = [
-    {name = "Aleix Alcacer", mail = "aleixalcacer@gmail.com"}
+    {name = "Aleix Alcacer", email = "aleixalcacer@gmail.com"},
+    {name = "Zanchenling Wang", email = "wangzancl@gmail.com"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3.9",
@@ -27,17 +28,18 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
+    "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering"
 ]
 dependencies = [
-    "numpy",
-    "scikit-learn",
-    "scipy<1.12",  # nnls issue, it will be fixed in 1.15
-    "matplotlib",
+    "numpy>=1.25",
+    "scikit-learn>=1.4",
+    "scipy>=1.8,<1.12",  # nnls issue, it will be fixed in 1.15
+    "matplotlib>=3.8",
     "jax",
     "optax",
     "torch",
-    "custom_inherit"
+    "custom_inherit",
 ]
 
 [project.urls]
@@ -54,6 +56,19 @@ dependencies = [
     "pylint",
     "jupyter",
 ]
+
+[tool.hatch.build.hooks.cython]
+dependencies = ["hatch-cython"]
+
+[tool.hatch.build.hooks.cython.options]
+src = "archetypes"
+directives = { boundscheck = false, wraparound = false, nonecheck = false, cdivision = true, language_level = 3, binding = true }
+
+[tool.hatch.build.hooks.cython.options.files]
+exclude = ["*.py$"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["archetypes"]
 
 [tool.isort]
 profile = "black"

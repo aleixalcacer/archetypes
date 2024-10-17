@@ -3,7 +3,7 @@ import scipy
 from opt_einsum import contract
 
 
-def nnls(B, A, max_iter=None, const=10.0):
+def nnls(B, A, max_iter_optimizer=100, const=100.0):
     """
     Non-negative Least Squares optimization.
     B = A @ X
@@ -25,7 +25,7 @@ def nnls(B, A, max_iter=None, const=10.0):
 
     X = np.zeros((B.shape[0], A.shape[0]))
     for i in range(B.shape[0]):
-        X[i, :] = scipy.optimize.nnls(A.T, B[i, :], maxiter=max_iter)[0]
+        X[i, :] = scipy.optimize.nnls(A.T, B[i, :], maxiter=max_iter_optimizer)[0]
 
     X = np.maximum(X, 1e-8)
     X = X / np.sum(X, axis=1)[:, None]
