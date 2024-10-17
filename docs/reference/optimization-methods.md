@@ -33,7 +33,7 @@ Like Pseudo-PGD, but performs orthogonal projection onto unit simplex
     | `max_iter_optimizer` | int    |    100     | The maximum number of iterations in the nnls optimization, passed to `scipy.optimize.nnls`|
     | `const`              | float  |   100.0    | The penalization constant to add in the nnls optimization to enforce convex optimization. |
 
-* Projected Gradient Descent (`pgd`):
+* (Pseudo) Projected Gradient Descent (`pgd` and `pseudo_pgd`):
 
     | Parameter            | Type  |  Default   | Description                                                        |
     |----------------------|-------|------------|--------------------------------------------------------------------|
