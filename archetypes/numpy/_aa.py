@@ -308,9 +308,13 @@ def nnls_transform(X, archetypes, *, max_iter, tol, **kwargs):
 
 def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
     loss_list = [
-        np.inf,
+        squared_norm(X - A @ archetypes),
     ]
     for i in range(1, max_iter + 1):
+        A = nnls(X, archetypes, **kwargs)
+        B = nnls(np.linalg.pinv(A) @ X, X, **kwargs)
+        archetypes = np.matmul(B, X, out=archetypes)
+
         rss = squared_norm(X - A @ archetypes)
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
@@ -319,11 +323,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
         if convergence:
             break
 
-        A = nnls(X, archetypes, **kwargs)
-        B = nnls(np.linalg.pinv(A) @ X, X, **kwargs)
-        archetypes = np.matmul(B, X, out=archetypes)
-
-    return A, B, archetypes, i, loss_list[1:], convergence
+    return A, B, archetypes, i, loss_list, convergence
 
 
 def pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
@@ -423,22 +423,15 @@ def _pgd_like_optimize_aa(
     A_new = np.empty_like(A)
     B_new = np.empty_like(B)
 
-    rss = squared_norm(ABX)
+    rss = squared_norm(ABX)  # Now ABX stores ABX - X
     loss_list = [
-        np.inf,
+        rss,
     ]
 
     step_size_A = step_size
     step_size_B = step_size
 
     for i in range(1, max_iter + 1):
-        convergence = abs(loss_list[-1] - rss) < tol
-        loss_list.append(rss)
-        if verbose and i % 10 == 0:
-            verbose_print_rss(max_iter, rss, i)
-        if convergence:
-            break
-
         rss, step_size_A = _pgd_like_update_A_inplace(
             X,
             A,
@@ -457,29 +450,34 @@ def _pgd_like_optimize_aa(
             rss,
         )
 
-        if not update_B:
-            continue
+        if update_B:
+            rss, step_size_B = _pgd_like_update_B_inplace(
+                X,
+                A,
+                B,
+                BX,
+                XXt,
+                ABX,
+                AtXXt,
+                XXtBt,
+                BXXtBt,
+                B_grad,
+                B_new,
+                pseudo_pgd,
+                step_size_B,
+                max_iter_optimizer,
+                beta,
+                rss,
+            )
 
-        rss, step_size_B = _pgd_like_update_B_inplace(
-            X,
-            A,
-            B,
-            BX,
-            XXt,
-            ABX,
-            AtXXt,
-            XXtBt,
-            BXXtBt,
-            B_grad,
-            B_new,
-            pseudo_pgd,
-            step_size_B,
-            max_iter_optimizer,
-            beta,
-            rss,
-        )
+        convergence = abs(loss_list[-1] - rss) < tol
+        loss_list.append(rss)
+        if verbose and i % 10 == 0:
+            verbose_print_rss(max_iter, rss, i)
+        if convergence:
+            break
 
-    return A, B, archetypes, i, loss_list[1:], convergence
+    return A, B, archetypes, i, loss_list, convergence
 
 
 def _pgd_like_update_A_inplace(
