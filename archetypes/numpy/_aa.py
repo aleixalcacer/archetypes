@@ -302,7 +302,7 @@ class AA(TransformerMixin, BaseEstimator):
         return self.A_
 
 
-def nnls_transform(X, archetypes, **kwargs):
+def nnls_transform(X, archetypes, *, max_iter, tol, **kwargs):
     return nnls(X, archetypes, **kwargs)
 
 
@@ -329,7 +329,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
 def pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
     A = X @ np.linalg.pinv(archetypes)
     unit_simplex_proj(A)
-    A, _, _, _, _ = _pgd_like_optimize_aa(
+    A, _, _, _, _, _ = _pgd_like_optimize_aa(
         X,
         A,
         None,
@@ -362,7 +362,7 @@ def pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
 def pseudo_pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
     A = X @ np.linalg.pinv(archetypes)
     l1_normalize_proj(A)
-    A, _, _, _, _ = _pgd_like_optimize_aa(
+    A, _, _, _, _, _ = _pgd_like_optimize_aa(
         X,
         A,
         None,
@@ -415,7 +415,7 @@ def _pgd_like_optimize_aa(
     ABX = A @ BX
     ABX -= X
     XXtBt = X @ BX.T
-    BXXtBt = B @ XXtBt
+    BXXtBt = BX @ BX.T
     AtXXt = A.T @ XXt
 
     A_grad = np.empty_like(A)
