@@ -235,7 +235,7 @@ class AA(TransformerMixin, BaseEstimator):
 
         if self.n_archetypes == 1:
             n_samples = X.shape[0]
-            archetypes_ = np.mean(X, axis=0)
+            archetypes_ = np.mean(X, axis=0, keepdims=True)
             B_ = np.full((self.n_archetypes, n_samples), 1 / n_samples, dtype=X.dtype)
             A_ = np.ones((n_samples, self.n_archetypes), dtype=X.dtype)
             best_rss = squared_norm(X - archetypes_)
