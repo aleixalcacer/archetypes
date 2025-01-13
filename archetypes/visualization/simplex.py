@@ -14,6 +14,7 @@ def simplex(
     ax=None,
     labels=None,
     show_vertices=False,
+    color="lightgray",
     vertices_color="k",
     vertices_size=200,
     vertices_labels=None,
@@ -102,47 +103,11 @@ def simplex(
         )
 
     if vertices_labels is None:
-        vertices_labels = [f"A{i}" for i in range(n)]
+        vertices_labels = [f"{i}" for i in range(n)]
 
-    ax.set_xlim(-2 + origin[0], 2 + origin[0])
-    ax.set_ylim(-2 + origin[1], 2 + origin[1])
-
-    annotations = []
     for i, p in enumerate(vertices[:]):
-        ann_i = ax.annotate(
-            vertices_labels[i],
-            xy=(p - origin) * 1.1 + origin,
-            xytext=(p - origin) * 1.3 + origin,
-            arrowprops={
-                "arrowstyle": "->",
-                "lw": 1,
-                "color": "gray",
-                "connectionstyle": "arc3,rad=0.2",
-            },
-            horizontalalignment="center",
-            verticalalignment="center",
-            zorder=3,
-            transform=ax.transData,
-            # bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=1),
-        )
-        annotations.append(ann_i)
+        ax.scatter(p[0], p[1], zorder=3, s=300)
 
-    # get renderer
-    renderer = ax.figure.canvas.get_renderer()
-
-    min_y, max_y = np.inf, -np.inf
-    min_x, max_x = np.inf, -np.inf
-    for ann_i in annotations:
-        bbox = ann_i.get_window_extent(renderer=renderer)
-        bbox_data = bbox.transformed(ax.transData.inverted())
-        corners = bbox_data.corners()
-        min_y = min(min_y, corners[:, 1].min())
-        max_y = max(max_y, corners[:, 1].max())
-        min_x = min(min_x, corners[:, 0].min())
-        max_x = max(max_x, corners[:, 0].max())
-
-    ax.set_xlim(min_x, max_x)
-    ax.set_ylim(min_y, max_y)
 
     # Project the points to 2D
     points_projected = np.apply_along_axis(
@@ -150,7 +115,7 @@ def simplex(
     )
 
     if show_points:
-        ax.scatter(points_projected[:, 0], points_projected[:, 1], zorder=2, **kwargs)
+        ax.scatter(points_projected[:, 0], points_projected[:, 1], zorder=2, color=color, s=100, **kwargs)
 
     if labels is not None:
         for i, p in enumerate(points_projected):
@@ -189,17 +154,25 @@ def simplex(
             )
             ax.add_patch(patch)
 
+    
+    # Add the legend outside the plot
+    for i, p in enumerate(vertices):
+        ax.scatter([], [], color=f"C{i}", s=100, label=i)
+    
+    ax.legend(loc="upper left", bbox_to_anchor=(1, 1), title="Archetypes", frameon=False, handlelength=1, handleheight=1)
+
     ax.axis("off")
-    ax.set_aspect("equal")
-    ax.autoscale()
-    # get datalim
+    aspect = ((10 * 0.8) / (8 * 0.9))
 
-    bbox = ax.get_window_extent(renderer=renderer)
-    bbox_data = bbox.transformed(ax.transData.inverted())
-    corners = bbox_data.corners()
+    # get ax size
+    
+    we = ax.get_window_extent()
 
-    # plot bbox
-    ax.scatter(corners[:, 0], corners[:, 1], marker="")
+    aspect = we.width / we.height
+
+    ax.set_aspect(1)
+    y_min, y_max = ax.get_ylim()
+    ax.set_xlim(y_min * aspect, y_max * aspect)
 
     if return_vertices:
         return ax, vertices
