@@ -34,7 +34,7 @@ def stacked_bar(
     n = points.shape[1]
 
     if vertices_labels is None:
-        vertices_labels = [f"A{i}" for i in range(n)]
+        vertices_labels = [f"{i}" for i in range(n)]
 
     if labels is None:
         show_labels = False
@@ -48,8 +48,8 @@ def stacked_bar(
         ax.bar(labels, points[:, j], label=vertice_label, bottom=bottom, **kwargs)
         bottom += points[:, j]
 
-    # Set the legend outside the plot
-    ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+    # remove background
+    ax.set_facecolor("none")
 
     # Set the labels
     ax.spines["top"].set_visible(False)
@@ -67,6 +67,10 @@ def stacked_bar(
 
     # set axis limits
     ax.axis("on")
+
+    ax.set_aspect("auto")
     ax.autoscale()
+
+    ax.legend(loc="upper left", bbox_to_anchor=(1, 1), title="Archetypes", frameon=False, handlelength=1, handleheight=1)
 
     return ax
