@@ -37,27 +37,26 @@ def circular_bar(
 
     if ax is None:
         fig = plt.gcf()
-        ax = [fig.add_subplot(1, m, i+1) for i in range(m)]
-
+        ax = [fig.add_subplot(1, m, i + 1) for i in range(m)]
 
     # Normalize the archetypes if data is provided
     data = np.asarray(data)
     if data is not None:
         archetypes = (data[np.newaxis, :, :] < archetypes[:, np.newaxis, :]).mean(axis=1)
-        
+
     # Check archetypes are in [0, 1]
     assert np.all((archetypes >= 0) & (archetypes <= 1)), "Archetypes must be in [0, 1]"
 
     if labels is None:
         labels = np.arange(n)
-    color = [f"C{i}" for i in range(n)]
-    
+    # color = [f"C{i}" for i in range(n)]
+
     if vertices_labels is None:
         vertices_labels = [f"{i}" for i in range(m)]
-    
+
     lower_bound = 10
     max_bound = 50
-    slope = (max_bound - lower_bound)
+    slope = max_bound - lower_bound
     label_padding = lower_bound + 4
 
     width = 2 * np.pi / n
@@ -78,11 +77,19 @@ def circular_bar(
         axs_polar.append(polar_ax)
 
         heights = lower_bound + slope * archetypes[i]
-       
-        bars = polar_ax.bar(angles, heights, width=width, bottom=lower_bound, color="whitesmoke", edgecolor="lightgray", **kwargs)
-        center = polar_ax.bar([0], lower_bound, width=2*np.pi, color=f"C{i}")           
-        
-        # This is the space between the end of the bar and the label        
+
+        _ = polar_ax.bar(
+            angles,
+            heights,
+            width=width,
+            bottom=lower_bound,
+            color="whitesmoke",
+            edgecolor="lightgray",
+            **kwargs,
+        )
+        _ = polar_ax.bar([0], lower_bound, width=2 * np.pi, color=f"C{i}")
+
+        # This is the space between the end of the bar and the label
         if show_labels:
             # Iterate over angles, values, and labels, to add all of them.
             for angle, height, label in zip(angles, heights, labels):
@@ -92,23 +99,22 @@ def circular_bar(
 
                 # Flip some labels upside down
                 alignment = ""
-                if angle >= np.pi/2 and angle < 3*np.pi/2:
+                if angle >= np.pi / 2 and angle < 3 * np.pi / 2:
                     alignment = "right"
                     rotation = rotation + 180
-                else: 
+                else:
                     alignment = "left"
-
 
                 # And finally add the text
                 ann_i = polar_ax.text(
-                    x=angle, 
-                    y=label_padding, 
+                    x=angle,
+                    y=label_padding,
                     fontdict={"fontsize": 8},
-                    s=label, 
-                    ha=alignment, 
-                    va="center", 
-                    rotation=rotation, 
-                    rotation_mode="anchor"
+                    s=label,
+                    ha=alignment,
+                    va="center",
+                    rotation=rotation,
+                    rotation_mode="anchor",
                 )
 
                 bbox = ann_i.get_window_extent()
@@ -123,12 +129,17 @@ def circular_bar(
         polar_ax.set_yticks([])
         axs_legend[i].axis("off")
 
-      
-
     # Add the legend outside the plot
     for j, label in enumerate(vertices_labels):
         axs_legend[-1].scatter([], [], color=f"C{j}", s=100, label=label)
-    axs_legend[-1].legend(loc="upper left", bbox_to_anchor=(1, 1), title="Archetypes", frameon=False, handlelength=1, handleheight=1)
+    axs_legend[-1].legend(
+        loc="upper left",
+        bbox_to_anchor=(1, 1),
+        title="Archetypes",
+        frameon=False,
+        handlelength=1,
+        handleheight=1,
+    )
 
     # for ax_i in axs_polar:
     #     ax_i.set_ylim(0, max_y + 10)

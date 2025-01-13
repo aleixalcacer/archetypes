@@ -71,6 +71,13 @@ def stacked_bar(
     ax.set_aspect("auto")
     ax.autoscale()
 
-    ax.legend(loc="upper left", bbox_to_anchor=(1, 1), title="Archetypes", frameon=False, handlelength=1, handleheight=1)
+    ax.legend(
+        loc="upper left",
+        bbox_to_anchor=(1, 1),
+        title="Archetypes",
+        frameon=False,
+        handlelength=1,
+        handleheight=1,
+    )
 
     return ax

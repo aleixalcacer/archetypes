@@ -1,7 +1,8 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import networkx as nx
 import warnings
+
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
 
 
 def network(
@@ -48,7 +49,6 @@ def network(
     if vertices_labels is None:
         vertices_labels = [f"{i}" for i in range(n)]
 
-    
     if labels is None:
         show_labels = False
         labels = np.arange(m)
@@ -69,14 +69,13 @@ def network(
         for j in range(n):
             if points[i, j] > threshold:
                 G.add_edge(i, j + m, weight=points[i, j])
-    
+
     # drop nodes with no edges
     nodes_to_drop = [node for node in G.nodes if G.degree(node) == 0]
     G.remove_nodes_from(nodes_to_drop)
 
     with warnings.catch_warnings(action="ignore"):
         pos = nx.nx_agraph.graphviz_layout(G)
-
 
     nodes = G.nodes()
 
@@ -86,32 +85,47 @@ def network(
     labels_map = {n: G.nodes[n]["label"] for n in points}
     weight_map = [G.edges[(u, v)]["weight"] for u, v in G.edges]
 
-    nx.draw(G, pos, nodelist=points, ax=ax,
-            node_color=color_map,
-            width=weight_map,
-            edge_color="gray",
-            labels=labels_map,
-            node_size=100,
-            with_labels=show_labels,
-            **kwargs
-            )
-        
+    nx.draw(
+        G,
+        pos,
+        nodelist=points,
+        ax=ax,
+        node_color=color_map,
+        width=weight_map,
+        edge_color="gray",
+        labels=labels_map,
+        node_size=100,
+        with_labels=show_labels,
+        **kwargs,
+    )
+
     archetypes = list(nodes)[-n:]
 
     color_map = [G.nodes[n]["color"] for n in archetypes]
     labels_map = {n: G.nodes[n]["label"] for n in archetypes}
 
-    nx.draw_networkx_nodes(G, pos, nodelist=archetypes, ax=ax,
-                        node_color=color_map,
-                        node_size=300,
-                        alpha=1.,
-                        )
+    nx.draw_networkx_nodes(
+        G,
+        pos,
+        nodelist=archetypes,
+        ax=ax,
+        node_color=color_map,
+        node_size=300,
+        alpha=1.0,
+    )
 
     # add legend
     for i in range(n):
         ax.scatter([], [], color=f"C{i}", s=100, label=i)
 
-    ax.legend(loc="upper left", bbox_to_anchor=(1, 1), title="Archetypes", frameon=False, handlelength=1, handleheight=1)
+    ax.legend(
+        loc="upper left",
+        bbox_to_anchor=(1, 1),
+        title="Archetypes",
+        frameon=False,
+        handlelength=1,
+        handleheight=1,
+    )
     # ax.set_aspect(1)
     ax.autoscale()
 

@@ -108,14 +108,15 @@ def simplex(
     for i, p in enumerate(vertices[:]):
         ax.scatter(p[0], p[1], zorder=3, s=300)
 
-
     # Project the points to 2D
     points_projected = np.apply_along_axis(
         lambda x: np.sum(x.reshape(-1, 1) * vertices, 0), 1, points
     )
 
     if show_points:
-        ax.scatter(points_projected[:, 0], points_projected[:, 1], zorder=2, color=color, s=100, **kwargs)
+        ax.scatter(
+            points_projected[:, 0], points_projected[:, 1], zorder=2, color=color, s=100, **kwargs
+        )
 
     if labels is not None:
         for i, p in enumerate(points_projected):
@@ -154,18 +155,24 @@ def simplex(
             )
             ax.add_patch(patch)
 
-    
     # Add the legend outside the plot
     for i, p in enumerate(vertices):
         ax.scatter([], [], color=f"C{i}", s=100, label=i)
-    
-    ax.legend(loc="upper left", bbox_to_anchor=(1, 1), title="Archetypes", frameon=False, handlelength=1, handleheight=1)
+
+    ax.legend(
+        loc="upper left",
+        bbox_to_anchor=(1, 1),
+        title="Archetypes",
+        frameon=False,
+        handlelength=1,
+        handleheight=1,
+    )
 
     ax.axis("off")
-    aspect = ((10 * 0.8) / (8 * 0.9))
+    aspect = (10 * 0.8) / (8 * 0.9)
 
     # get ax size
-    
+
     we = ax.get_window_extent()
 
     aspect = we.width / we.height
