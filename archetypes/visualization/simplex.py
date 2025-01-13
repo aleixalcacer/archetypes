@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import rcParams
 
 
 def simplex(
@@ -15,8 +16,8 @@ def simplex(
     labels=None,
     show_vertices=False,
     color="lightgray",
-    vertices_color="k",
-    vertices_size=200,
+    vertices_color=None,
+    vertices_size=None,
     vertices_labels=None,
     return_vertices=False,
     **kwargs,
@@ -93,20 +94,31 @@ def simplex(
             ax.plot([x1, x2], [y1, y2], "-", linewidth=1, color="lightgray", zorder=0)
 
     # ax.plot(vertices[:, 0], vertices[:, 1], "o", color="black", alpha=1)
-    if show_vertices:
-        ax.scatter(
-            vertices[:, 0],
-            vertices[:, 1],
-            s=vertices_size,
-            c=vertices_color,
-            zorder=1,
-        )
+    # Plot vertices
+
+    if vertices_color is None:
+        vertices_color = [f"C{i}" for i in range(n)]
+    if isinstance(vertices_color, str):
+        vertices_color = [vertices_color] * n
+
+    if vertices_size is None:
+        vertices_size = rcParams["lines.markersize"] ** 2
+    if isinstance(vertices_size, (int, float)):
+        vertices_size = [vertices_size] * n
 
     if vertices_labels is None:
         vertices_labels = [f"{i}" for i in range(n)]
 
-    for i, p in enumerate(vertices[:]):
-        ax.scatter(p[0], p[1], zorder=3, s=300)
+    if show_vertices:
+        for i, p in enumerate(vertices[:]):
+            ax.scatter(
+                p[0],
+                p[1],
+                zorder=3,
+                s=vertices_size[i],
+                c=vertices_color[i],
+                label=vertices_labels[i],
+            )
 
     # Project the points to 2D
     points_projected = np.apply_along_axis(
@@ -114,9 +126,7 @@ def simplex(
     )
 
     if show_points:
-        ax.scatter(
-            points_projected[:, 0], points_projected[:, 1], zorder=2, color=color, s=100, **kwargs
-        )
+        ax.scatter(points_projected[:, 0], points_projected[:, 1], zorder=2, color=color, **kwargs)
 
     if labels is not None:
         for i, p in enumerate(points_projected):
@@ -155,18 +165,15 @@ def simplex(
             )
             ax.add_patch(patch)
 
-    # Add the legend outside the plot
-    for i, p in enumerate(vertices):
-        ax.scatter([], [], color=f"C{i}", s=100, label=i)
-
-    ax.legend(
-        loc="upper left",
-        bbox_to_anchor=(1, 1),
-        title="Archetypes",
-        frameon=False,
-        handlelength=1,
-        handleheight=1,
-    )
+    if show_vertices:
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1, 1),
+            title="Archetypes",
+            frameon=False,
+            handlelength=1,
+            handleheight=1,
+        )
 
     ax.axis("off")
     aspect = (10 * 0.8) / (8 * 0.9)
