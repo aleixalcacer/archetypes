@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from opt_einsum import contract
+from sklearn.utils.extmath import squared_norm
 
 
 def nnls(B, A, max_iter_optimizer=100, const=100.0):
@@ -76,3 +77,34 @@ def partial_arch_einsum(param_tensors, tensor, index: []):
     equation = "".join(equation) + "".join(inner_symbols) + "->" + "".join(res_equation)
 
     return contract(equation, *param_tensors, tensor, optimize="auto")
+
+
+def pmc(X, B, **kwargs):
+    """
+    Partitioning Around Components
+    """
+
+    archetypes = B @ X
+    archetypes_index = np.argmax(B, axis=1)
+    n_archetypes = B.shape[0]
+    A = nnls(X, archetypes, **kwargs)
+    rss = squared_norm(X - A @ archetypes)
+    combination = None
+    for k in range(n_archetypes):
+        if k != 0:
+            archetypes[k - 1] = X[archetypes_index[k - 1]]
+        for i in range(X.shape[0]):
+            archetypes[k] = X[i]
+            A = nnls(X, archetypes, **kwargs)
+            rss_i = squared_norm(X - A @ archetypes)
+            if rss_i < rss:
+                rss = rss_i
+                combination = {"k": k, "i": i}
+
+    if combination:
+        archetypes_index[combination["k"]] = combination["i"]
+
+    B = np.zeros((n_archetypes, X.shape[0]))
+    B[np.arange(n_archetypes), archetypes_index] = 1
+
+    return B
