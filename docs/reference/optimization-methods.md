@@ -39,7 +39,7 @@ Like Pseudo-PGD, but performs orthogonal projection onto unit simplex
     |----------------------|-------|------------|--------------------------------------------------------------------|
     | `max_iter_optimizer` | int   |     10     | The maximum number of iterations for optimizing the learning rate. |
     | `beta`               | float |    0.5     | The decay factor for the learning rate.                            |
-    | `step_size`          | float |    1.0     | The initial learning rate at the beginning of optimization.        |
+    | `step_size`          | float |    1.0     | The initial learning rate at the beginning of optimization, corresponding to the objective function $\frac{1}{2} \left\lVert X - A B X \right \rVert^2$                  |
 
 ### JAX backend
 
