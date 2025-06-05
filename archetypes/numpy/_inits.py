@@ -72,6 +72,48 @@ def furthest_sum(X, k, random_state=None, **kwargs):
     return ind
 
 
+def furthest_sum_kernel(X, k, kernel, random_state=None, **kwargs):
+    # Archetypal Analysis for Machine Learning
+    # Morten Mørup and Lars Kai Hansen, 2010
+
+    n = X.shape[0]
+    ind = []
+
+    # sample first point uniformly at random
+    i = random_state.choice(n, 1).item()
+    ind.append(i)
+
+    # compute the (sum) of distances to the chosen point(s)
+    K = kernel(X, X)
+
+    # Convert Gram matrix to distance
+    dist = np.sqrt(-2 * K + np.diag(K)[:, None] + np.diag(K)[None, :])
+
+    initial_dist = dist.copy()
+
+    # chose k-1 points
+    for _ in range(k - 1):
+        # don't choose a chosen point again
+        dist[ind] = 0.0
+        # choose the point that is furthest away
+        # to the sum of distances of points
+        i = dist.argmax()
+        ind.append(i)
+        # add the distances to the new point to the current distances
+        dist = dist + dist[:, i]
+
+    # forget the first point chosen
+    dist = dist - initial_dist
+    ind = ind[1:]
+    # don't choose a chosen point again
+    dist[ind] = 0.0
+    # chose another one
+    i = dist.argmax()
+    ind.append(i)
+
+    return ind
+
+
 def coreset(X, k, random_state=None, **kwargs):
     # Coresets for Archetypal Analysis
     # Mair and Brefeld, 2019
