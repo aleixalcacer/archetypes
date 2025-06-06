@@ -11,6 +11,11 @@ def uniform(X, k, random_state=None, **kwargs):
     return random_state.choice(X.shape[0], k, replace=False)
 
 
+def uniform_kernel(X, k, kernel, random_state=None, **kwargs):
+    # sample all points uniformly at random
+    return random_state.choice(X.shape[0], k, replace=False)
+
+
 def furthest_first(X, k, random_state=None, **kwargs):
     n = X.shape[0]
     ind = []
@@ -79,36 +84,37 @@ def furthest_sum_kernel(X, k, kernel, random_state=None, **kwargs):
     n = X.shape[0]
     ind = []
 
-    # sample first point uniformly at random
-    i = random_state.choice(n, 1).item()
-    ind.append(i)
-
     # compute the (sum) of distances to the chosen point(s)
-    K = kernel(X, X)
+    K = kernel(X, X, **kwargs)
 
     # Convert Gram matrix to distance
     dist = np.sqrt(-2 * K + np.diag(K)[:, None] + np.diag(K)[None, :])
 
-    initial_dist = dist.copy()
+    # sample first point uniformly at random
+    i = random_state.choice(n, 1).item()
+    ind.append(i)
+    dist_i = dist[i].copy()
+    initial_dist = dist_i.copy()
 
     # chose k-1 points
     for _ in range(k - 1):
         # don't choose a chosen point again
-        dist[ind] = 0.0
+        dist_i[ind] = 0.0
         # choose the point that is furthest away
         # to the sum of distances of points
-        i = dist.argmax()
+        i = dist_i.argmax()
+        print("Chosen index:", i)
         ind.append(i)
         # add the distances to the new point to the current distances
-        dist = dist + dist[:, i]
+        dist_i = dist_i + dist[:, i]
 
     # forget the first point chosen
-    dist = dist - initial_dist
+    dist_i = dist_i - initial_dist
     ind = ind[1:]
     # don't choose a chosen point again
-    dist[ind] = 0.0
+    dist_i[ind] = 0.0
     # chose another one
-    i = dist.argmax()
+    i = dist_i.argmax()
     ind.append(i)
 
     return ind
