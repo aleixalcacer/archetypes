@@ -103,7 +103,7 @@ def furthest_sum_kernel(X, k, kernel, random_state=None, **kwargs):
         # choose the point that is furthest away
         # to the sum of distances of points
         i = dist_i.argmax()
-        print("Chosen index:", i)
+
         ind.append(i)
         # add the distances to the new point to the current distances
         dist_i = dist_i + dist[:, i]
