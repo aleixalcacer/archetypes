@@ -221,22 +221,25 @@ class KernelAA(TransformerMixin, BaseEstimator):
             n_samples = X.shape[0]
             return np.ones((n_samples, self.n_archetypes_), dtype=X.dtype)
 
+        kernel_kwargs = {} if self.kernel_kwargs is None else self.kernel_kwargs
+
+        # To avoid confusions, the X to transform will be renamed to W.
         if self.kernel == "linear":
-            Z = linear_kernel(X, **self.kernel_kwargs)
-            Z2 = linear_kernel(X, self.X_, **self.kernel_kwargs)
-            Z3 = linear_kernel(self.X_, self.X_, **self.kernel_kwargs)
+            ZWWt = linear_kernel(X, **kernel_kwargs)
+            ZWXt = linear_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = linear_kernel(self.X_, self.X_, **kernel_kwargs)
         elif self.kernel == "poly":
-            Z = polynomial_kernel(X, **self.kernel_kwargs)
-            Z2 = polynomial_kernel(X, self.X_, **self.kernel_kwargs)
-            Z3 = polynomial_kernel(self.X_, self.X_, **self.kernel_kwargs)
+            ZWWt = polynomial_kernel(X, **kernel_kwargs)
+            ZWXt = polynomial_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = polynomial_kernel(self.X_, self.X_, **kernel_kwargs)
         elif self.kernel == "rbf":
-            Z = rbf_kernel(X, **self.kernel_kwargs)
-            Z2 = rbf_kernel(X, self.X_, **self.kernel_kwargs)
-            Z3 = rbf_kernel(self.X_, self.X_, **self.kernel_kwargs)
+            ZWWt = rbf_kernel(X, **kernel_kwargs)
+            ZWXt = rbf_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = rbf_kernel(self.X_, self.X_, **kernel_kwargs)
         elif self.kernel == "sigmoid":
-            Z = sigmoid_kernel(X, **self.kernel_kwargs)
-            Z2 = sigmoid_kernel(X, self.X_, **self.kernel_kwargs)
-            Z3 = sigmoid_kernel(self.X_, self.X_, **self.kernel_kwargs)
+            ZWWt = sigmoid_kernel(X, **kernel_kwargs)
+            ZWXt = sigmoid_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = sigmoid_kernel(self.X_, self.X_, **kernel_kwargs)
         else:
             raise ValueError(f"Unknown kernel: {self.kernel}")
 
@@ -247,7 +250,15 @@ class KernelAA(TransformerMixin, BaseEstimator):
 
         method_kwargs = {} if self.method_kwargs is None else self.method_kwargs
         A = transform_func(
-            X, self.B_, archetypes, Z, Z2, Z3, max_iter=self.max_iter, tol=self.tol, **method_kwargs
+            X,
+            self.B_,
+            archetypes,
+            ZWWt,
+            ZWXt,
+            ZXXtt,
+            max_iter=self.max_iter,
+            tol=self.tol,
+            **method_kwargs,
         )
         return A
 
@@ -298,13 +309,13 @@ class KernelAA(TransformerMixin, BaseEstimator):
             # Compute kernel
 
             if self.kernel == "linear":
-                Z = linear_kernel(X)
+                ZWWt = linear_kernel(X)
             elif self.kernel == "poly":
-                Z = polynomial_kernel(X)
+                ZWWt = polynomial_kernel(X)
             elif self.kernel == "rbf":
-                Z = rbf_kernel(X)
+                ZWWt = rbf_kernel(X)
             elif self.kernel == "sigmoid":
-                Z = sigmoid_kernel(X)
+                ZWWt = sigmoid_kernel(X)
             else:
                 raise ValueError(f"Unknown kernel: {self.kernel}")
 
@@ -312,8 +323,8 @@ class KernelAA(TransformerMixin, BaseEstimator):
                 X.copy()
             )  # Store the original data for computing the kernel matrix in transform
 
-            Z2 = Z.copy()  # Same X used in fit and transform, so we can reuse the kernel matrix
-            Z3 = Z.copy()  # Same X used in fit and transform, so we can reuse the kernel matrix
+            ZWXt = ZWWt.copy()
+            ZXXtt = ZWWt.copy()
 
             best_rss = np.inf
             for i in range(self.n_init):
@@ -328,9 +339,9 @@ class KernelAA(TransformerMixin, BaseEstimator):
                     A,
                     B,
                     archetypes,
-                    Z,
-                    Z2,
-                    Z3,
+                    ZWWt,
+                    ZWXt,
+                    ZXXtt,
                     max_iter=self.max_iter,
                     tol=self.tol,
                     verbose=self.verbose,
@@ -364,7 +375,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
         return self.A_
 
 
-def pgd_transform(X, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, **kwargs):
+def pgd_transform(X, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, **kwargs):
     A = X @ np.linalg.pinv(archetypes)
     unit_simplex_proj(A)
 
@@ -373,9 +384,9 @@ def pgd_transform(X, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, **kwargs
         A,
         B,
         archetypes,
-        Zx2x2,
-        Zx2x,
-        Zxx,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=False,
@@ -386,15 +397,15 @@ def pgd_transform(X, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, **kwargs
     return A
 
 
-def pgd_fit_transform(X, A, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, verbose, **kwargs):
+def pgd_fit_transform(X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, verbose, **kwargs):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
         archetypes,
-        Zx2x2,
-        Zx2x,
-        Zxx,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=verbose,
@@ -404,7 +415,7 @@ def pgd_fit_transform(X, A, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, v
     )
 
 
-def pseudo_pgd_transform(X, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, **kwargs):
+def pseudo_pgd_transform(X, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, **kwargs):
     A = X @ np.linalg.pinv(archetypes)
     l1_normalize_proj(A)
 
@@ -413,9 +424,9 @@ def pseudo_pgd_transform(X, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, *
         A,
         B,
         archetypes,
-        Zx2x2,
-        Zx2x,
-        Zxx,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=False,
@@ -427,16 +438,16 @@ def pseudo_pgd_transform(X, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, *
 
 
 def pseudo_pgd_fit_transform(
-    X, A, B, archetypes, Zx2x2, Zx2x, Zxx, *, max_iter, tol, verbose, **kwargs
+    X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, verbose, **kwargs
 ):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
         archetypes,
-        Zx2x2,
-        Zx2x,
-        Zxx,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=verbose,
@@ -451,9 +462,9 @@ def _pgd_like_optimize_aa(
     A,
     B,
     archetypes,
-    Zx2x2,
-    Zx2x,
-    Zxx,
+    ZWWt,
+    ZWXt,
+    ZXXt,
     *,
     max_iter,
     tol,
@@ -469,12 +480,12 @@ def _pgd_like_optimize_aa(
     # precomputing and memory allocation
     BX = archetypes
 
-    BXXt = B @ Zx2x.T
-    BXXtBt = np.linalg.multi_dot([B, Zxx, B.T])
+    BXWt = B @ ZWXt.T
+    BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T])
 
     # Gradients
-    AtXXt = A.T @ Zx2x
-    XXtBt = Zx2x @ B.T
+    AtWXt = A.T @ ZWXt
+    WXtBt = ZWXt @ B.T
 
     A_grad = np.empty_like(A)
     B_grad = np.empty_like(B)
@@ -482,7 +493,7 @@ def _pgd_like_optimize_aa(
     B_new = np.empty_like(B)
 
     rss = np.trace(
-        Zx2x2 - 2 * np.linalg.multi_dot([A, BXXt]) + np.linalg.multi_dot([A, BXXtBt, A.T])
+        ZWWt - 2 * np.linalg.multi_dot([A, BXWt]) + np.linalg.multi_dot([A, BXXtBt, A.T])
     )
 
     loss_list = [
@@ -496,13 +507,13 @@ def _pgd_like_optimize_aa(
         rss, step_size_A = _pgd_like_update_A_inplace(
             X,
             A,
-            Zx2x2,
-            Zx2x,
-            Zxx,
-            BXXt,
-            XXtBt,
+            ZWWt,
+            ZWXt,
+            ZXXt,
+            BXWt,
+            WXtBt,
             BXXtBt,
-            AtXXt,
+            AtWXt,
             A_grad,
             A_new,
             pseudo_pgd,
@@ -518,13 +529,13 @@ def _pgd_like_optimize_aa(
                 A,
                 B,
                 BX,
-                Zx2x2,
-                Zx2x,
-                Zxx,
-                BXXt,
-                XXtBt,
+                ZWWt,
+                ZWXt,
+                ZXXt,
+                BXWt,
+                WXtBt,
                 BXXtBt,
-                AtXXt,
+                AtWXt,
                 B_grad,
                 B_new,
                 pseudo_pgd,
@@ -547,13 +558,13 @@ def _pgd_like_optimize_aa(
 def _pgd_like_update_A_inplace(
     X,
     A,
-    Zx2x2,
-    Zx2x,
-    Zxx,
-    BXXt,
-    XXtBt,
+    ZWWt,
+    ZWXt,
+    ZXXt,
+    BXWt,
+    WXtBt,
     BXXtBt,
-    AtXXt,
+    AtWXt,
     A_grad,
     A_new,
     pseudo_pgd,
@@ -564,7 +575,7 @@ def _pgd_like_update_A_inplace(
 ):
     # gradient wrt A
     A_grad = np.matmul(A, BXXtBt, out=A_grad)
-    A_grad -= XXtBt
+    A_grad -= WXtBt
     # A_grad /= (np.trace(XXt / A.shape[0]))
     # A_grad -= np.sum(A_grad * A, axis=1, keepdims=True)
 
@@ -584,9 +595,7 @@ def _pgd_like_update_A_inplace(
         A_new += A
         project(A_new)
 
-        rss_new = (
-            np.trace(Zx2x2) - 2 * np.sum(A_new.T * BXXt) + np.sum(BXXtBt.T * (A_new.T @ A_new))
-        )
+        rss_new = np.trace(ZWWt) - 2 * np.sum(A_new.T * BXWt) + np.sum(BXXtBt.T * (A_new.T @ A_new))
 
         # print(f"RSS new: {rss_new}, RSS new 2: {rss_new_2}")
 
@@ -602,7 +611,7 @@ def _pgd_like_update_A_inplace(
     if improved:
         np.copyto(A, A_new)
 
-        AtXXt = np.matmul(A.T, Zx2x, out=AtXXt)
+        AtWXt = np.matmul(A.T, ZWXt, out=AtWXt)
         rss = rss_new
 
     return rss, step_size_A
@@ -613,13 +622,13 @@ def _pgd_like_update_B_inplace(
     A,
     B,
     BX,
-    Zx2x2,
-    Zx2x,
-    Zxx,
-    BXXt,
-    XXtBt,
+    ZWWt,
+    ZWXt,
+    ZXXt,
+    BXWt,
+    WXtBt,
     BXXtBt,
-    AtXXt,
+    AtWXt,
     B_grad,
     B_new,
     pseudo_pgd,
@@ -628,9 +637,9 @@ def _pgd_like_update_B_inplace(
     beta,
     rss,
 ):
-    B_grad = np.linalg.multi_dot([A.T, A, BXXt], out=B_grad)
-    B_grad -= AtXXt
-    B_grad /= np.trace(Zx2x2)
+    B_grad = np.linalg.multi_dot([A.T, A, BXWt], out=B_grad)
+    B_grad -= AtWXt
+    B_grad /= np.trace(ZWWt)
 
     B_grad -= np.sum(B_grad * B, axis=1, keepdims=True)
 
@@ -649,9 +658,9 @@ def _pgd_like_update_B_inplace(
         project(B_new)
 
         rss_new = (
-            np.trace(Zx2x2)
-            - 2 * np.sum(A.T * (B_new @ Zx2x))
-            + np.sum((B_new @ Zxx @ B_new.T).T * (A.T @ A))
+            np.trace(ZWWt)
+            - 2 * np.sum(A.T * (B_new @ ZWXt))
+            + np.sum(np.linalg.multi_dot([B_new, ZXXt, B_new.T]).T * (A.T @ A))
         )
 
         # print(f"RSS new: {rss_new}, RSS new 2: {rss_new_2}")
@@ -665,9 +674,9 @@ def _pgd_like_update_B_inplace(
     if improved:
         np.copyto(B, B_new)
         BX = np.matmul(B, X, out=BX)
-        BXXt = np.matmul(B, Zx2x, out=BXXt)
-        XXtBt = np.matmul(Zx2x, B.T, out=XXtBt)
-        BXXtBt = np.linalg.multi_dot([B, Zxx, B.T], out=BXXtBt)
+        BXWt = np.matmul(B, ZWXt, out=BXWt)
+        WXtBt = np.matmul(ZWXt, B.T, out=WXtBt)
+        BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T], out=BXXtBt)
 
         rss = rss_new
 
