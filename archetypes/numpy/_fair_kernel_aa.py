@@ -2,24 +2,40 @@ from numbers import Integral, Real
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin, _fit_context
+from sklearn.metrics.pairwise import (
+    linear_kernel,
+    polynomial_kernel,
+    rbf_kernel,
+    sigmoid_kernel,
+)
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import squared_norm
 from sklearn.utils.validation import check_is_fitted
 
-from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
+from ._inits import furthest_sum_kernel, uniform_kernel
 from ._projection import l1_normalize_proj, unit_simplex_proj
 
 
-class FairAA(TransformerMixin, BaseEstimator):
+class FairKernelAA(TransformerMixin, BaseEstimator):
     """
-    Archetype Analysis.
+    Kernel Archetype Analysis.
 
     Parameters
     ----------
     n_archetypes: int
         The number of archetypes to compute.
     fairness_const: float, default=200.0
+        The fairness constant to use for the archetype analysis.
+        It is used to balance the trade-off between the reconstruction error
+        and the fairness constraint. A higher value will lead to more
+        fair archetypes, while a lower value will lead to more accurate
+        archetypes.
+    kernel : str, default=’rbf’
+        The kernel to use for the archetype analysis, must be one of
+        the following: 'linear', 'poly', 'rbf', 'sigmoid'.
+    kernel_kwargs : dict, default=None
+        Additional keyword arguments to pass to the kernel function.
     max_iter : int, default=300
         Maximum number of iterations of the archetype analysis algorithm
         for a single run.
@@ -27,7 +43,7 @@ class FairAA(TransformerMixin, BaseEstimator):
         Relative tolerance of two consecutive iterations to declare convergence.
     init : str, default='uniform'
         Method used to initialize the archetypes, must be one of
-        the following: 'uniform', 'furthest_sum', 'furthest_first' or 'aa_plus_plus'.
+        the following: 'uniform' or 'furthest_sum'.
         See :ref:`initialization-methods`.
     n_init : int, default=1
         Number of time the archetype analysis algorithm will be run with different
@@ -38,7 +54,7 @@ class FairAA(TransformerMixin, BaseEstimator):
         If True, save the initial archetypes in the attribute `archetypes_init_`,
     method: str, default='pgd'
         The optimization method to use for the archetypes and the coefficients,
-        must be one of the following: 'pgd', 'pseudo_pgd'. See :ref:`optimization-methods`.
+        must be one of the following: 'pgd'. See :ref:`optimization-methods`.
     method_kwargs : dict, default=None
         Additional arguments to pass to the optimization method. See :ref:`optimization-methods`.
     verbose : bool, default=False
@@ -79,10 +95,16 @@ class FairAA(TransformerMixin, BaseEstimator):
             Interval(Integral, 1, None, closed="left"),
             # StrOptions({"auto"}),
         ],
+        "fairness_const": [Real, None],
+        "kernel": [
+            StrOptions({"linear", "poly", "rbf", "sigmoid"}),
+            None,
+        ],
+        "kernel_kwargs": [dict, None],
         "max_iter": [Interval(Integral, 1, None, closed="left")],
         "tol": [Interval(Real, 0, None, closed="left")],
         "init": [
-            StrOptions({"uniform", "furthest_sum", "furthest_first", "coreset", "aa_plus_plus"}),
+            StrOptions({"uniform", "furthest_sum"}),
             None,
         ],
         "init_kwargs": [dict, None],
@@ -97,7 +119,9 @@ class FairAA(TransformerMixin, BaseEstimator):
         self,
         n_archetypes,
         *,
-        fairness_const=200,
+        fairness_const=200.0,
+        kernel="rbf",
+        kernel_kwargs=None,
         max_iter=300,
         tol=1e-4,
         init="uniform",
@@ -111,6 +135,8 @@ class FairAA(TransformerMixin, BaseEstimator):
     ):
         self.n_archetypes = n_archetypes
         self.fairness_const = fairness_const
+        self.kernel = kernel
+        self.kernel_kwargs = kernel_kwargs
         self.max_iter = max_iter
         self.tol = tol
         self.init = init
@@ -132,17 +158,20 @@ class FairAA(TransformerMixin, BaseEstimator):
         n_samples, n_features = X.shape
 
         if self.init == "uniform":
-            init_archetype_func = uniform
+            init_archetype_func = uniform_kernel
         elif self.init == "furthest_sum":
-            init_archetype_func = furthest_sum
-        elif self.init == "furthest_first":
-            init_archetype_func = furthest_first
-        elif self.init == "aa_plus_plus":
-            init_archetype_func = aa_plus_plus
+            init_archetype_func = furthest_sum_kernel
 
         init_kwargs = {} if self.init_kwargs is None else self.init_kwargs
+        kernel_kwargs = {} if self.kernel_kwargs is None else self.kernel_kwargs
+
+        # concatenate kernel kwargs with init kwargs
+        init_kwargs = {**kernel_kwargs, **init_kwargs}
+
         B = np.zeros((self.n_archetypes, n_samples), dtype=X.dtype)
-        ind = init_archetype_func(X, self.n_archetypes, random_state=rng, **init_kwargs)
+        ind = init_archetype_func(
+            X, self.n_archetypes, eval(f"{self.kernel}_kernel"), random_state=rng, **init_kwargs
+        )
         for i, j in enumerate(ind):
             B[i, j] = 1
 
@@ -155,7 +184,7 @@ class FairAA(TransformerMixin, BaseEstimator):
 
         return A, B, archetypes
 
-    def fit(self, X, y=None, Z=None):
+    def fit(self, X, y=None, Z=None, **params):
         """
         Compute Archetype Analysis.
 
@@ -175,7 +204,7 @@ class FairAA(TransformerMixin, BaseEstimator):
         self : object
             Fitted estimator.
         """
-        self.fit_transform(X, y, Z)
+        self.fit_transform(X, y, Z, **params)
         return self
 
     def transform(self, X, Z):
@@ -205,6 +234,28 @@ class FairAA(TransformerMixin, BaseEstimator):
             n_samples = X.shape[0]
             return np.ones((n_samples, self.n_archetypes_), dtype=X.dtype)
 
+        kernel_kwargs = {} if self.kernel_kwargs is None else self.kernel_kwargs
+
+        # To avoid confusions, the X to transform will be renamed to W.
+        if self.kernel == "linear":
+            ZWWt = linear_kernel(X, **kernel_kwargs)
+            ZWXt = linear_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = linear_kernel(self.X_, self.X_, **kernel_kwargs)
+        elif self.kernel == "poly":
+            ZWWt = polynomial_kernel(X, **kernel_kwargs)
+            ZWXt = polynomial_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = polynomial_kernel(self.X_, self.X_, **kernel_kwargs)
+        elif self.kernel == "rbf":
+            ZWWt = rbf_kernel(X, **kernel_kwargs)
+            ZWXt = rbf_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = rbf_kernel(self.X_, self.X_, **kernel_kwargs)
+        elif self.kernel == "sigmoid":
+            ZWWt = sigmoid_kernel(X, **kernel_kwargs)
+            ZWXt = sigmoid_kernel(X, self.X_, **kernel_kwargs)
+            ZXXtt = sigmoid_kernel(self.X_, self.X_, **kernel_kwargs)
+        else:
+            raise ValueError(f"Unknown kernel: {self.kernel}")
+
         if self.method == "pgd":
             transform_func = pgd_transform
         elif self.method == "pseudo_pgd":
@@ -213,9 +264,13 @@ class FairAA(TransformerMixin, BaseEstimator):
         method_kwargs = {} if self.method_kwargs is None else self.method_kwargs
         A = transform_func(
             X,
+            self.B_,
             Z,
             archetypes,
-            fairness_const=self.fairness_const,
+            self.fairness_const,
+            ZWWt,
+            ZWXt,
+            ZXXtt,
             max_iter=self.max_iter,
             tol=self.tol,
             **method_kwargs,
@@ -223,7 +278,7 @@ class FairAA(TransformerMixin, BaseEstimator):
         return A
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit_transform(self, X, y=None, Z=None, **params):
+    def fit_transform(self, X, y=None, Z=None):
         """
         Compute the archetypes and transform X to the archetypal space.
 
@@ -237,12 +292,12 @@ class FairAA(TransformerMixin, BaseEstimator):
             Not used, present here for API consistency by convention.
         Z : array-like of shape (n_samples, n_sensitive_features)
             Sensitive features to compute the fairness constraint.
+
         Returns
         -------
         A : ndarray of shape (n_samples, n_archetypes)
             X transformed in the new space.
         """
-
         X = self._validate_data(X, dtype=[np.float64, np.float32])
         self._check_params_vs_data(X)
         X = np.ascontiguousarray(X)
@@ -252,7 +307,7 @@ class FairAA(TransformerMixin, BaseEstimator):
             archetypes_ = np.mean(X, axis=0, keepdims=True)
             B_ = np.full((self.n_archetypes, n_samples), 1 / n_samples, dtype=X.dtype)
             A_ = np.ones((n_samples, self.n_archetypes), dtype=X.dtype)
-            best_rss = squared_norm(X - archetypes_) + self.fairness_const * squared_norm(Z.T @ A_)
+            best_rss = squared_norm(X - archetypes_)
             n_iter_ = 0
             loss_ = [
                 best_rss,
@@ -268,6 +323,26 @@ class FairAA(TransformerMixin, BaseEstimator):
 
             rng = check_random_state(self.random_state)
 
+            # Compute kernel
+
+            if self.kernel == "linear":
+                ZWWt = linear_kernel(X)
+            elif self.kernel == "poly":
+                ZWWt = polynomial_kernel(X)
+            elif self.kernel == "rbf":
+                ZWWt = rbf_kernel(X)
+            elif self.kernel == "sigmoid":
+                ZWWt = sigmoid_kernel(X)
+            else:
+                raise ValueError(f"Unknown kernel: {self.kernel}")
+
+            self.X_ = (
+                X.copy()
+            )  # Store the original data for computing the kernel matrix in transform
+
+            ZWXt = ZWWt.copy()
+            ZXXtt = ZWWt.copy()
+
             best_rss = np.inf
             for i in range(self.n_init):
                 A, B, archetypes = self._init_archetypes(X, rng)
@@ -282,7 +357,10 @@ class FairAA(TransformerMixin, BaseEstimator):
                     B,
                     Z,
                     archetypes,
-                    fairness_const=self.fairness_const,
+                    self.fairness_const,
+                    ZWWt,
+                    ZWXt,
+                    ZXXtt,
                     max_iter=self.max_iter,
                     tol=self.tol,
                     verbose=self.verbose,
@@ -316,16 +394,22 @@ class FairAA(TransformerMixin, BaseEstimator):
         return self.A_
 
 
-def pgd_transform(X, Z, archetypes, *, fairness_const, max_iter, tol, **kwargs):
+def pgd_transform(
+    X, B, Z, archetypes, fairness_const, ZWWt, ZWXt, ZXXt, *, max_iter, tol, **kwargs
+):
     A = X @ np.linalg.pinv(archetypes)
     unit_simplex_proj(A)
+
     A, _, _, _, _, _ = _pgd_like_optimize_aa(
         X,
         A,
-        None,
+        B,
         Z,
         archetypes,
-        fairness_const=fairness_const,
+        fairness_const,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=False,
@@ -336,14 +420,19 @@ def pgd_transform(X, Z, archetypes, *, fairness_const, max_iter, tol, **kwargs):
     return A
 
 
-def pgd_fit_transform(X, A, B, Z, archetypes, *, fairness_const, max_iter, tol, verbose, **kwargs):
+def pgd_fit_transform(
+    X, A, B, Z, archetypes, fairness_const, ZWWt, ZWXt, ZXXt, *, max_iter, tol, verbose, **kwargs
+):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
         Z,
         archetypes,
-        fairness_const=fairness_const,
+        fairness_const,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=verbose,
@@ -353,16 +442,22 @@ def pgd_fit_transform(X, A, B, Z, archetypes, *, fairness_const, max_iter, tol, 
     )
 
 
-def pseudo_pgd_transform(X, Z, archetypes, *, fairness_const, max_iter, tol, **kwargs):
+def pseudo_pgd_transform(
+    X, B, Z, archetypes, fairness_const, ZWWt, ZWXt, ZXXt, *, max_iter, tol, **kwargs
+):
     A = X @ np.linalg.pinv(archetypes)
     l1_normalize_proj(A)
+
     A, _, _, _, _, _ = _pgd_like_optimize_aa(
         X,
         A,
-        None,
+        B,
         Z,
         archetypes,
-        fairness_const=fairness_const,
+        fairness_const,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=False,
@@ -374,7 +469,7 @@ def pseudo_pgd_transform(X, Z, archetypes, *, fairness_const, max_iter, tol, **k
 
 
 def pseudo_pgd_fit_transform(
-    X, A, B, Z, archetypes, *, fairness_const, max_iter, tol, verbose, **kwargs
+    X, A, B, Z, archetypes, fairness_const, ZWWt, ZWXt, ZXXt, *, max_iter, tol, verbose, **kwargs
 ):
     return _pgd_like_optimize_aa(
         X,
@@ -382,7 +477,10 @@ def pseudo_pgd_fit_transform(
         B,
         Z,
         archetypes,
-        fairness_const=fairness_const,
+        fairness_const,
+        ZWWt,
+        ZWXt,
+        ZXXt,
         max_iter=max_iter,
         tol=tol,
         verbose=verbose,
@@ -398,8 +496,11 @@ def _pgd_like_optimize_aa(
     B,
     Z,
     archetypes,
-    *,
     fairness_const,
+    ZWWt,
+    ZWXt,
+    ZXXt,
+    *,
     max_iter,
     tol,
     verbose=False,
@@ -413,21 +514,25 @@ def _pgd_like_optimize_aa(
 
     # precomputing and memory allocation
     BX = archetypes
-    XXt = X @ X.T
-    ABX = A @ BX
-    ABX -= X
-    XXtBt = X @ BX.T
-    BXXtBt = BX @ BX.T
-    AtXXt = A.T @ XXt
 
+    BXWt = B @ ZWXt.T
+    BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T])
+
+    # Gradients
+    AtWXt = A.T @ ZWXt
+    WXtBt = ZWXt @ B.T
+
+    # fairness const
     ZZt = fairness_const * Z @ Z.T
-
     A_grad = np.empty_like(A)
     B_grad = np.empty_like(B)
     A_new = np.empty_like(A)
     B_new = np.empty_like(B)
 
-    rss = squared_norm(ABX) + fairness_const * squared_norm(Z.T @ A)  # Now ABX stores ABX - X
+    rss = np.trace(
+        ZWWt - 2 * np.linalg.multi_dot([A, BXWt]) + np.linalg.multi_dot([A, BXXtBt, A.T])
+    ) + squared_norm(Z.T @ A)
+
     loss_list = [
         rss,
     ]
@@ -439,19 +544,20 @@ def _pgd_like_optimize_aa(
         rss, step_size_A = _pgd_like_update_A_inplace(
             X,
             A,
-            B,
             Z,
-            BX,
-            XXt,
-            ABX,
-            XXtBt,
-            BXXtBt,
             ZZt,
+            fairness_const,
+            ZWWt,
+            ZWXt,
+            ZXXt,
+            BXWt,
+            WXtBt,
+            BXXtBt,
+            AtWXt,
             A_grad,
             A_new,
             pseudo_pgd,
             step_size_A,
-            fairness_const,
             max_iter_optimizer,
             beta,
             rss,
@@ -462,18 +568,21 @@ def _pgd_like_optimize_aa(
                 X,
                 A,
                 B,
-                Z,
                 BX,
-                XXt,
-                ABX,
-                AtXXt,
-                XXtBt,
+                Z,
+                ZZt,
+                fairness_const,
+                ZWWt,
+                ZWXt,
+                ZXXt,
+                BXWt,
+                WXtBt,
                 BXXtBt,
+                AtWXt,
                 B_grad,
                 B_new,
                 pseudo_pgd,
                 step_size_B,
-                fairness_const,
                 max_iter_optimizer,
                 beta,
                 rss,
@@ -492,27 +601,31 @@ def _pgd_like_optimize_aa(
 def _pgd_like_update_A_inplace(
     X,
     A,
-    B,
     Z,
-    BX,
-    XXt,
-    ABX,
-    XXtBt,
-    BXXtBt,
     ZZt,
+    fairness_const,
+    ZWWt,
+    ZWXt,
+    ZXXt,
+    BXWt,
+    WXtBt,
+    BXXtBt,
+    AtWXt,
     A_grad,
     A_new,
     pseudo_pgd,
     step_size_A,
-    fairness_const,
     max_iter_optimizer,
     beta,
     rss,
 ):
     # gradient wrt A
     A_grad = np.matmul(A, BXXtBt, out=A_grad)
-    A_grad -= XXtBt
+    A_grad -= WXtBt
     A_grad += fairness_const * ZZt @ A
+    # A_grad /= (np.trace(XXt / A.shape[0]))
+    # A_grad -= np.sum(A_grad * A, axis=1, keepdims=True)
+
     if pseudo_pgd:
         # TODO: malloc here!
         A_grad -= np.expand_dims(np.einsum("ij,ij->i", A, A_grad), axis=1)
@@ -528,9 +641,16 @@ def _pgd_like_update_A_inplace(
         A_new = np.multiply(-step_size_A, A_grad, out=A_new)
         A_new += A
         project(A_new)
-        ABX = np.matmul(A_new, BX, out=ABX)
-        ABX -= X
-        rss_new = squared_norm(ABX) + fairness_const * squared_norm(Z.T @ A_new)
+
+        rss_new = (
+            np.trace(ZWWt)
+            - 2 * np.sum(A_new.T * BXWt)
+            + np.sum(BXXtBt.T * (A_new.T @ A_new))
+            + fairness_const * squared_norm(Z.T @ A_new)
+        )
+
+        # print(f"RSS new: {rss_new}, RSS new 2: {rss_new_2}")
+
         # if we make any improvement, break
         improved = rss_new < rss
         if improved:
@@ -542,6 +662,8 @@ def _pgd_like_update_A_inplace(
     # fix new A and update rss
     if improved:
         np.copyto(A, A_new)
+
+        AtWXt = np.matmul(A.T, ZWXt, out=AtWXt)
         rss = rss_new
 
     return rss, step_size_A
@@ -551,25 +673,31 @@ def _pgd_like_update_B_inplace(
     X,
     A,
     B,
-    Z,
     BX,
-    XXt,
-    ABX,
-    AtXXt,
-    XXtBt,
+    Z,
+    ZZt,
+    fairness_const,
+    ZWWt,
+    ZWXt,
+    ZXXt,
+    BXWt,
+    WXtBt,
     BXXtBt,
+    AtWXt,
     B_grad,
     B_new,
     pseudo_pgd,
     step_size_B,
-    fairness_const,
     max_iter_optimizer,
     beta,
     rss,
 ):
-    ABX += X
-    B_grad = np.linalg.multi_dot([A.T, ABX, X.T], out=B_grad)
-    B_grad -= np.matmul(A.T, XXt, out=AtXXt)
+    B_grad = np.linalg.multi_dot([A.T, A, BXWt], out=B_grad)
+    B_grad -= AtWXt
+    B_grad /= np.trace(ZWWt)
+
+    B_grad -= np.sum(B_grad * B, axis=1, keepdims=True)
+
     if pseudo_pgd:
         # TODO: malloc here!
         B_grad -= np.expand_dims(np.einsum("ij,ij->i", B, B_grad), axis=1)
@@ -583,10 +711,17 @@ def _pgd_like_update_B_inplace(
         B_new = np.multiply(-step_size_B, B_grad, out=B_new)
         B_new += B
         project(B_new)
-        ABX = np.linalg.multi_dot([A, B_new, X], out=ABX)
-        ABX -= X
-        rss_new = squared_norm(ABX) + fairness_const * squared_norm(Z.T @ A)
-        improved = rss_new < rss
+
+        rss_new = (
+            np.trace(ZWWt)
+            - 2 * np.sum(A.T * (B_new @ ZWXt))
+            + np.sum(np.linalg.multi_dot([B_new, ZXXt, B_new.T]).T * (A.T @ A))
+            + fairness_const * squared_norm(Z.T @ A)
+        )
+
+        # print(f"RSS new: {rss_new}, RSS new 2: {rss_new_2}")
+
+        improved = np.abs(rss_new) < rss
         if improved:
             step_size_B /= beta
             break
@@ -595,8 +730,10 @@ def _pgd_like_update_B_inplace(
     if improved:
         np.copyto(B, B_new)
         BX = np.matmul(B, X, out=BX)
-        XXtBt = np.matmul(X, BX.T, out=XXtBt)
-        BXXtBt = np.matmul(B, XXtBt, out=BXXtBt)
+        BXWt = np.matmul(B, ZWXt, out=BXWt)
+        WXtBt = np.matmul(ZWXt, B.T, out=WXtBt)
+        BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T], out=BXXtBt)
+
         rss = rss_new
 
     return rss, step_size_B

@@ -1,4 +1,4 @@
-from archetypes.numpy import AA, ADA, BiAA, FairAA, KernelAA
+from archetypes.numpy import AA, ADA, BiAA, FairAA, FairKernelAA, KernelAA
 
 __all__ = [
     "AA",
@@ -6,6 +6,7 @@ __all__ = [
     "ADA",
     "FairAA",
     "KernelAA",
+    "FairKernelAA",
 ]
 
 __version__ = "0.6.2"
