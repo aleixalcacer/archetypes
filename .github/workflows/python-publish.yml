@@ -36,6 +36,7 @@ jobs:
         python -m pip install auditwheel
         for whl in dist/*.whl; do
           auditwheel repair "$whl" -w dist/
+          rm "$whl"
         done
 
     - name: Publish to PyPI
