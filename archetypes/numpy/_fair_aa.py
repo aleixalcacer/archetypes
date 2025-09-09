@@ -13,7 +13,10 @@ from ._projection import l1_normalize_proj, unit_simplex_proj
 
 class FairAA(TransformerMixin, BaseEstimator):
     """
-    Archetype Analysis.
+    Fair Archetype Analysis.
+
+    This class implements the Fair Archetype Analysis algorithm, which is a variant of the
+    archetype analysis that incorporates fairness constraints.
 
     Parameters
     ----------
