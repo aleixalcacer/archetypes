@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 from custom_inherit import doc_inherit
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from ._base import BiAABase
 from ._biaa_3 import BiAA_3
@@ -57,7 +57,7 @@ class BiAA(BiAABase):
 
     def fit(self, X, y=None, **fit_params):
         X = self._check_data(X)
-        X = self._validate_data(X, dtype=[jnp.float64, jnp.float32])
+        X = validate_data(self, X, dtype=[jnp.float64, jnp.float32], reset=True)
 
         self.method_class.fit(X)
 
@@ -73,7 +73,7 @@ class BiAA(BiAABase):
 
     def transform(self, X):
         check_is_fitted(self)
-        X = self._validate_data(X, dtype=[jnp.float64, jnp.float32])
+        X = validate_data(self, X, dtype=[jnp.float64, jnp.float32], reset=False)
 
         return self.method_class.transform(X)
 

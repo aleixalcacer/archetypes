@@ -1,6 +1,6 @@
 import numpy as np
 from custom_inherit import doc_inherit
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from ._base import BiAABase
 from ._biaa_3 import BiAA_3
@@ -54,7 +54,7 @@ class BiAA(BiAABase):
             )
 
     def fit(self, X, y=None, **fit_params):
-        X = self._validate_data(X, dtype=[np.float64, np.float32])
+        X = validate_data(self, X, dtype=[np.float64, np.float32])
         self._check_data(X)
 
         self.method_class.fit(X)
@@ -71,7 +71,7 @@ class BiAA(BiAABase):
 
     def transform(self, X):
         check_is_fitted(self)
-        X = self._validate_data(X, dtype=[np.float64, np.float32])
+        X = validate_data(self, X, dtype=[np.float64, np.float32])
 
         return self.method_class.transform(X)
 

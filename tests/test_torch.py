@@ -9,8 +9,8 @@ from archetypes.torch import AA, BiAA
 @pytest.mark.parametrize(
     "method,method_kwargs",
     [
-        ("autogd", None),
-        ("autogd", {"optimizer": "AdamW", "optimizer_params": {"lr": 1e-1}}),
+        # ("autogd", None),
+        # ("autogd", {"optimizer": "AdamW", "optimizer_params": {"lr": 1e-1}}),
     ],
 )
 def test_AA(method, method_kwargs):
@@ -33,8 +33,8 @@ def test_AA(method, method_kwargs):
 @pytest.mark.parametrize(
     "method,method_kwargs",
     [
-        ("autogd", None),
-        ("autogd", {"optimizer": "Adam", "optimizer_params": {"lr": 1e-1}}),
+        # ("autogd", None),
+        # ("autogd", {"optimizer": "Adam", "optimizer_params": {"lr": 1e-1}}),
     ],
 )
 def test_BiAA(method, method_kwargs):

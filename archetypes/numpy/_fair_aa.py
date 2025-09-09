@@ -5,7 +5,7 @@ from sklearn.base import BaseEstimator, TransformerMixin, _fit_context
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import squared_norm
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 from ._projection import l1_normalize_proj, unit_simplex_proj
@@ -197,7 +197,7 @@ class FairAA(TransformerMixin, BaseEstimator):
             X transformed in the new space.
         """
         check_is_fitted(self)
-        X = self._validate_data(X, dtype=[np.float64, np.float32], reset=False)
+        X = validate_data(self, X, dtype=[np.float64, np.float32], reset=False)
         X = np.ascontiguousarray(X)
         archetypes = self.archetypes_
 
@@ -243,7 +243,7 @@ class FairAA(TransformerMixin, BaseEstimator):
             X transformed in the new space.
         """
 
-        X = self._validate_data(X, dtype=[np.float64, np.float32])
+        X = validate_data(self, X, dtype=[np.float64, np.float32])
         self._check_params_vs_data(X)
         X = np.ascontiguousarray(X)
 
