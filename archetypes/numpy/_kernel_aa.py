@@ -21,6 +21,9 @@ class KernelAA(TransformerMixin, BaseEstimator):
     """
     Kernel Archetype Analysis.
 
+    This class implements the Kernel Archetype Analysis algorithm, which is a variant of the
+    archetype analysis that uses kernel methods to compute the archetypes.
+
     Parameters
     ----------
     n_archetypes: int

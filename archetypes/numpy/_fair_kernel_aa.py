@@ -19,7 +19,11 @@ from ._projection import l1_normalize_proj, unit_simplex_proj
 
 class FairKernelAA(TransformerMixin, BaseEstimator):
     """
-    Kernel Archetype Analysis.
+    Fair Kernel Archetype Analysis.
+
+    This class implements the Fair Kernel Archetype Analysis algorithm, which is a variant of the
+    archetype analysis that incorporates fairness constraints and uses kernel methods to compute
+    the archetypes.
 
     Parameters
     ----------
