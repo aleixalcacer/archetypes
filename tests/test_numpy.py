@@ -40,6 +40,10 @@ def test_AA(method, method_kwargs):
     [
         ("nnls", None),
         ("nnls", {"max_iter_optimizer": 100, "const": 10}),
+        ("pgd", None),
+        ("pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
+        ("pseudo_pgd", None),
+        ("pseudo_pgd", {"max_iter_optimizer": 15, "beta": 0.7}),
     ],
 )
 def test_BiAA(method, method_kwargs):
@@ -52,7 +56,6 @@ def test_BiAA(method, method_kwargs):
 
     model = BiAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
     model = model.fit(data)
-    trans_data = model.transform(data)
 
     for i in range(len(n_archetypes)):
         assert trans_data[i].shape == (shape[i], n_archetypes[i])
