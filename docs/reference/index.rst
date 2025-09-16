@@ -28,6 +28,7 @@ Numpy backend
    FairKernelAA
    ADA
    BiAA
+   SymmetricBiAA
 
 JAX backend
 ~~~~~~~~~~~~~
