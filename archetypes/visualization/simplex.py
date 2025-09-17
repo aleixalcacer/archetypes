@@ -18,6 +18,7 @@ def simplex(
     color="lightgray",
     vertices_color=None,
     vertices_size=None,
+    vertice_marker=None,
     vertices_labels=None,
     return_vertices=False,
     **kwargs,
@@ -54,6 +55,8 @@ def simplex(
         Set the color of the vertices.
     vertices_size : scalar
         Set the size of the vertices.
+    vertice_marker: str
+        Set the marker of the vertices.
     vertices_labels : list or None
         A list of labels for the vertices. If None, no labels are displayed.
     return_vertices : bool
@@ -98,8 +101,11 @@ def simplex(
 
     if vertices_color is None:
         vertices_color = [f"C{i}" for i in range(n)]
-    if isinstance(vertices_color, str):
+    elif isinstance(vertices_color, str):
         vertices_color = [vertices_color] * n
+    else:
+        vertices_cmap = plt.get_cmap()
+        discrete_cmap = vertices_cmap(np.linspace(0, 1, max(vertices_color) + 1))
 
     if vertices_size is None:
         vertices_size = rcParams["lines.markersize"] ** 2
@@ -109,6 +115,8 @@ def simplex(
     if vertices_labels is None:
         vertices_labels = [f"{i}" for i in range(n)]
 
+    if vertice_marker is None:
+        vertice_marker = "X"
     if show_vertices:
         for i, p in enumerate(vertices[:]):
             ax.scatter(
@@ -116,8 +124,9 @@ def simplex(
                 p[1],
                 zorder=3,
                 s=vertices_size[i],
-                c=vertices_color[i],
+                color=discrete_cmap[vertices_color[i]],
                 label=vertices_labels[i],
+                marker=vertice_marker,
             )
 
     # Project the points to 2D
