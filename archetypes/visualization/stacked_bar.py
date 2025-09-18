@@ -42,10 +42,20 @@ def stacked_bar(
     else:
         show_labels = True
 
+    cmap = plt.get_cmap()
+    discrete_cmap = cmap(np.linspace(0, 1, n))
+
     # Plot the points
     bottom = np.zeros(m)
     for j, vertice_label in enumerate(vertices_labels):
-        ax.bar(labels, points[:, j], label=vertice_label, bottom=bottom, **kwargs)
+        ax.bar(
+            labels,
+            points[:, j],
+            label=vertice_label,
+            bottom=bottom,
+            color=discrete_cmap[j],
+            **kwargs,
+        )
         bottom += points[:, j]
 
     # remove background
