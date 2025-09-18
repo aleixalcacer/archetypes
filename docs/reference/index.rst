@@ -12,9 +12,6 @@ Algorithms
 
 This section provides an overview of the main algorithms implemented in the `archetypes` package. Each algorithm is designed to address different aspects of archetypal analysis, offering flexibility and performance across various computational backends. Explore the summaries and links below to learn more about their features, usage, and implementation details.
 
-Numpy backend
-~~~~~~~~~~~~~
-
 .. currentmodule:: archetypes
 .. autosummary::
    :caption: API Reference
@@ -29,30 +26,6 @@ Numpy backend
    ADA
    BiAA
    SymmetricBiAA
-
-JAX backend
-~~~~~~~~~~~~~
-
-.. currentmodule:: archetypes.jax
-.. autosummary::
-   :toctree: _autosummary/jax
-   :recursive:
-   :template: class.rst
-
-   AA
-   BiAA
-
-Torch backend
-~~~~~~~~~~~~~
-
-.. currentmodule:: archetypes.torch
-.. autosummary::
-   :toctree: _autosummary/torch
-   :recursive:
-   :template: class.rst
-
-   AA
-   BiAA
 
 
 Visualization
@@ -69,7 +42,6 @@ This section covers the visualization tools provided by the `archetypes` package
 
    simplex
    stacked_bar
-   heatmap
 
 
 Datasets
