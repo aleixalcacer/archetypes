@@ -1,16 +1,17 @@
 # Tutorials
 
-In this section, we provide a set of tutorials that cover different aspects of Archetypal Analysis (AA) using the Archetypes package. These tutorials are designed to help you get started with AA, understand its benefits, and demonstrate how to use the Archetypes package to perform various types of analyses.
+In this section, we provide a comprehensive set of tutorials that guide you through the fascinating world of Archetypal Analysis (AA) using the Archetypes package. These hands-on tutorials are carefully designed to take you from basic concepts to advanced applications, helping you understand the theoretical foundations, practical implementations, and real-world benefits of archetypal analysis.
 
-The tutorials are organized into the following sections:
+Whether you're a data scientist exploring new dimensionality reduction techniques, a researcher looking for interpretable clustering alternatives, or an analyst seeking to understand the extreme boundaries of your data, these tutorials will equip you with the knowledge and skills needed to effectively apply archetypal analysis to your own datasets.
 
-- [Archetype Analysis](examples/aa.ipynb): This section includes tutorials that demonstrate how to perform AA using the Archetypes package.
-- [Biarchetype Analysis](examples/biaa.ipynb): This section includes tutorials that demonstrate how to perform BiAA using the Archetypes package.
+The tutorials include:
+
+- [Getting Started with Archetypal Analysis](examples/aa.ipynb): A comprehensive introduction to archetypal analysis using the classic Iris dataset. Learn the core concepts, understand the difference between archetypes and clusters, master the interpretation of similarity degrees and mixture coefficients, and explore powerful visualization techniques including PCA projections, simplex plots, and stacked bar charts. Perfect for beginners who want to understand what makes archetypal analysis unique and powerful.
+
 :::{toctree}
 :hidden: true
 
-Archetype Analysis <examples/aa.ipynb>
-Biarchetype Analysis <examples/biaa.ipynb>
+Getting Started with Archetypal Analysis <examples/aa.ipynb>
 :::
 
-If you have any questions or issues while working through the tutorials, please don't hesitate to reach out to us. We hope you find these tutorials helpful in learning about AA and using the Archetypes package!
+If you have any questions or issues while working through the tutorials, please don't hesitate to reach out to us through our GitHub repository or community forums. We hope you find these tutorials helpful in mastering archetypal analysis and unlocking new insights from your data.
