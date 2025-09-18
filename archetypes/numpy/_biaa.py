@@ -56,9 +56,9 @@ class BiAA(TransformerMixin, BaseEstimator):
         The number of archetypes after fitting.
     archetypes_init_ : np.ndarray
         The initial archetypes. It is only available if `save_init=True`.
-    similarity_degree_, A_ : list of np.ndarray
+    coefficients_, A_ : list of np.ndarray
         The similarity degree of each sample to each archetype.
-    archetypes_similarity_degree_, B_ : list of np.ndarray
+    arch_coefficients_, B_ : list of np.ndarray
         The similarity degree of each archetype to each sample.
     labels_ : list of np.ndarray
         The label of each sample. It is the index of the closest archetype.
@@ -304,8 +304,8 @@ class BiAA(TransformerMixin, BaseEstimator):
         self.loss_ = loss_
         self.rss_ = best_rss
 
-        self.similarity_degree_ = self.A_
-        self.archetypes_similarity_degree_ = self.B_
+        self.coefficients_ = self.A_
+        self.arch_coefficients_ = self.B_
         self.n_archetypes_ = self.archetypes_.shape
         self.labels_ = [np.argmax(self.A_[0], axis=1), np.argmax(self.A_[1], axis=1)]
 

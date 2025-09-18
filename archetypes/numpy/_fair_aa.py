@@ -59,10 +59,10 @@ class FairAA(TransformerMixin, BaseEstimator):
         The number of archetypes after fitting.
     archetypes_init_ : np.ndarray
         The initial archetypes. It is only available if `save_init=True`.
-    similarity_degree_, A_ : np.ndarray
+    coefficients_, A_ : np.ndarray
         The similarity degree of each sample to each archetype.
         It has shape `(n_samples, n_archetypes)`.
-    archetypes_similarity_degree_, B_ : np.ndarray
+    arch_coefficients_, B_ : np.ndarray
         The similarity degree of each archetype to each sample.
         It has shape `(n_archetypes, n_samples)`.
     labels_ : np.ndarray
@@ -308,8 +308,8 @@ class FairAA(TransformerMixin, BaseEstimator):
         self.loss_ = loss_
         self.rss_ = best_rss
 
-        self.similarity_degree_ = self.A_
-        self.archetypes_similarity_degree_ = self.B_
+        self.coefficients_ = self.A_
+        self.arch_coefficients_ = self.B_
         self.n_archetypes_ = self.B_.shape[0]
         self.labels_ = np.argmax(self.A_, axis=1)
 
