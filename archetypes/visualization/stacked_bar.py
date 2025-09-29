@@ -1,13 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import to_rgba_array
+
+from archetypes.visualization.utils import get_cmap
+
+from .utils import map_colors
 
 
 def stacked_bar(
     points,
     ax=None,
-    labels=None,
-    vertices_labels=None,
-    **kwargs,
+    **params,
 ):
     """
     A stacked bar plot of *points* with multiple optional parameters to obtain a customized
@@ -18,13 +21,14 @@ def stacked_bar(
     points : numpy.ndarray
         The points to plot.
     ax : matplotlib.pyplot.axes or None
-        The axes
-    labels : list or None
-        A list of labels for the points. If None, no labels are displayed.
-    vertices_labels : list or None
-        A list of labels for the vertices. If None, no labels are displayed.
-    kwargs
+        The axes to plot on. If None, the current axes will be used.
+    **params : dict, optional
+        The parameters to pass to the bar plot. ax.bar(..., **params)
 
+    Returns
+    -------
+    matplotlib.pyplot.axes
+        The axes with the plot.
     """
     if not ax:
         ax = plt.gca()
@@ -33,29 +37,58 @@ def stacked_bar(
     m = points.shape[0]
     n = points.shape[1]
 
-    if vertices_labels is None:
-        vertices_labels = [f"{i}" for i in range(n)]
+    labels = np.arange(m)
 
-    if labels is None:
-        show_labels = False
-        labels = np.arange(m)
+    params_default = {
+        "width": 1,
+    }
+
+    if params is None:
+        params = params_default
+
+    for k, v in params_default.items():
+        params.setdefault(k, v)
+
+    # check if cmap is in params, otherwise use default
+    cmap = get_cmap()
+
+    if "color" in params:
+        if isinstance(params["color"], str):
+            params["color"] = [params["color"]] * n
+        elif isinstance(params["color"], list) and len(params["color"]) != n:
+            raise ValueError(f"Length of color list must be {n}.")
+        color = params.pop("color")
     else:
-        show_labels = True
+        color = list(range(n))
 
-    cmap = plt.get_cmap()
-    discrete_cmap = cmap(np.linspace(0, 1, n))
+    color = map_colors(color, cmap=cmap)
+
+    color[:, -1] = 0.5  # set alpha to 0.5 for bars
+
+    if "edgecolor" in params:
+        if isinstance(params["edgecolor"], str):
+            params["edgecolor"] = [params["edgecolor"]] * n
+        elif isinstance(params["edgecolor"], list) and len(params["edgecolor"]) != n:
+            raise ValueError(f"Length of edgecolor list must be {n}.")
+        edgecolor = params.pop("edgecolor")
+        edgecolor = to_rgba_array(edgecolor)
+    else:
+        edgecolor = color.copy()
+        edgecolor[:, -1] = 1  # set alpha to 1 for edges
 
     # Plot the points
     bottom = np.zeros(m)
-    for j, vertice_label in enumerate(vertices_labels):
-        ax.bar(
+    for j in range(n):
+        _ = ax.bar(
             labels,
             points[:, j],
-            label=vertice_label,
             bottom=bottom,
-            color=discrete_cmap[j],
-            **kwargs,
+            color=color[j],
+            edgecolor=edgecolor[j],
+            label="Archetypes" if j == 0 else None,
+            **params,
         )
+
         bottom += points[:, j]
 
     # remove background
@@ -70,24 +103,13 @@ def stacked_bar(
     ax.set_ylabel("Similarity degree")
     ax.set_xlabel("Observations")
     ax.set_yticks([])
+    # Show percentage on y-axis
     ax.set_yticklabels([])
-    if not show_labels:
-        ax.set_xticks([])
-        ax.set_xticklabels([])
+    ax.set_xticks([])
+    ax.set_xticklabels([])
 
     # set axis limits
     ax.axis("on")
-
     ax.set_aspect("auto")
-    ax.autoscale()
-
-    ax.legend(
-        loc="upper left",
-        bbox_to_anchor=(1, 1),
-        title="Archetypes",
-        frameon=False,
-        handlelength=1,
-        handleheight=1,
-    )
 
     return ax

@@ -5,11 +5,12 @@ In this section, we provide a comprehensive set of tutorials that guide you thro
 The tutorials include:
 
 - [Getting Started with Archetypal Analysis](examples/aa.ipynb): A comprehensive introduction to archetypal analysis using the classic Iris dataset.
-
+- [Visualization Guide](examples/visualization.ipynb): Explore various visualization techniques to interpret and present archetypal analysis results effectively.
 :::{toctree}
 :hidden: true
 
 Getting Started with Archetypal Analysis <examples/aa.ipynb>
+Visualization Guide <examples/visualization.ipynb>
 :::
 
 If you have any questions or issues while working through the tutorials, please don't hesitate to reach out to us through our GitHub repository or community forums. We hope you find these tutorials helpful in mastering archetypal analysis and unlocking new insights from your data.
