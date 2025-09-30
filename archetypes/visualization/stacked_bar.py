@@ -42,6 +42,7 @@ def stacked_bar(
         "width": 1,
         "cmap": cmap,
         "c": range(n),
+        "label": "Archetypes",
     }
 
     if "edgecolor" not in params:
@@ -61,6 +62,8 @@ def stacked_bar(
         color = params.pop("c")
     color[:, -1] = 0.5  # set alpha to 0.5
 
+    label = params.pop("label")
+
     # Plot the points
     bottom = np.zeros(m)
     for j in range(n):
@@ -70,7 +73,7 @@ def stacked_bar(
             bottom=bottom,
             color=color[j],
             edgecolor=edgecolor[j],
-            label="Archetypes" if j == 0 else None,
+            label=label if j == 0 else None,
             **params,
         )
 
@@ -85,8 +88,8 @@ def stacked_bar(
     ax.spines["left"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
 
-    ax.set_ylabel("Similarity degree")
-    ax.set_xlabel("Observations")
+    ax.set_ylabel("Mixture Coefficients")
+    ax.set_xlabel("Samples")
     ax.set_yticks([])
     # Show percentage on y-axis
     ax.set_yticklabels([])
