@@ -1,5 +1,4 @@
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize, is_color_like, to_rgba_array
@@ -32,7 +31,7 @@ def set_cmap(name):
     return cmap
 
 
-def map_colors(c, cmap="viridis", vmin=None, vmax=None):
+def map_colors(c, n, cmap="viridis", vmin=None, vmax=None):
     """
     Map values to RGBA colors like matplotlib.scatter(c=...).
 
@@ -48,6 +47,12 @@ def map_colors(c, cmap="viridis", vmin=None, vmax=None):
         colors : np.ndarray of shape (N, 4)
     """
     c = np.atleast_1d(np.array(c))
+
+    # Check if len(c) == 1 or len(c) == n
+    if c.shape[0] == 1:
+        c = np.repeat(c, n)
+    elif c.shape[0] != n:
+        raise ValueError(f"Length of c must be 1 or {n}, got {len(c)}.")
 
     # Case 1: all color-like strings ("red", "#123456")
     if np.all([is_color_like(ci) for ci in c]):
@@ -65,7 +70,52 @@ def map_colors(c, cmap="viridis", vmin=None, vmax=None):
 
     # Case 3: categorical / string values
     else:
-        categories, indices = np.unique(c, return_inverse=True)
-        n_colors = len(categories)
-        cmap_obj = plt.get_cmap(cmap, n_colors)
-        return cmap_obj(indices)
+        _, indices = np.unique(c, return_inverse=True)
+
+        if vmin is None:
+            vmin = np.min(indices)
+        if vmax is None:
+            vmax = np.max(indices)
+
+        norm = Normalize(vmin=vmin, vmax=vmax, clip=True)
+        sm = ScalarMappable(norm=norm, cmap=cmap)
+        return sm.to_rgba(indices)
+
+
+def process_params(n, params, params_default):
+    """
+    Process parameters by setting defaults where not provided.
+
+    Parameters
+    ----------
+    params : dict or None
+        User-provided parameters.
+    params_default : dict
+        Default parameters.
+
+    Returns
+    -------
+    dict
+        Processed parameters with defaults applied.
+    """
+    if params is None:
+        params = params_default
+
+    if "color" in params:
+        params_default.pop("c", None)
+
+    for k, v in params_default.items():
+        params.setdefault(k, v)
+
+    if "c" in params:
+        params["c"] = map_colors(params["c"], n, cmap=params["cmap"])
+
+    if "color" in params:
+        params["color"] = map_colors(params["color"], n, cmap=params["cmap"])
+
+    if "edgecolor" in params:
+        params["edgecolor"] = map_colors(params["edgecolor"], n, cmap=params["cmap"])
+
+    params.pop("cmap", None)
+
+    return params

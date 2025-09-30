@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import rcParams
 
-from archetypes.visualization.utils import get_cmap, map_colors
+from archetypes.visualization.utils import get_cmap, process_params
 
 
 def simplex(
@@ -47,33 +47,30 @@ def simplex(
         ax = plt.gca()
 
     points = np.asarray(points)
-    n = points.shape[1]
+    m = points.shape[1]
+    n = points.shape[0]
 
-    # Draw simplex structure
+    cmap = get_cmap()
 
     # Compute the vertices of the simplex
-    theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    theta = np.linspace(0, 2 * np.pi, m, endpoint=False)
     x = np.cos(theta) + origin[0]
     y = np.sin(theta) + origin[1]
 
     vertices = np.stack((x, y), axis=1)
 
+    # Draw the simplex axis
     if show_axis:
-        axis_kwargs_default = {
+        axis_params_default = {
             "color": "black",
             "linewidth": 1,
             "linestyle": "-",
             "zorder": 0,
+            "cmap": cmap,
         }
 
-        if axis_params is None:
-            axis_params = axis_kwargs_default
+        axis_params = process_params(1, axis_params, axis_params_default)
 
-        if "c" in axis_params:
-            raise ValueError("Use 'color' instead of 'c' in simplex_kwargs.")
-
-        for k, v in axis_kwargs_default.items():
-            axis_params.setdefault(k, v)
         edges = combinations(vertices, 2)
 
         for p1, p2 in edges:
@@ -81,32 +78,18 @@ def simplex(
             x2, y2 = p2
             ax.plot([x1, x2], [y1, y2], **axis_params)
 
-    # Draw vertices
-    cmap = get_cmap()
-
+    # Draw the simplex vertices
     if show_vertices:
-        vertices_kwargs_default = {
+        vertices_params_default = {
             "zorder": 2,
             "s": getattr(rcParams, "lines.markersize", 50) * 2,
             "label": "Archetypes",
-            "c": list(range(n)),
+            "c": list(range(m)),
             "cmap": cmap,
         }
 
-        if vertices_params is None:
-            vertices_params = vertices_kwargs_default
+        vertices_params = process_params(m, vertices_params, vertices_params_default)
 
-        if "color" in vertices_params:
-            vertices_kwargs_default.pop("c")
-
-        for k, v in vertices_kwargs_default.items():
-            vertices_params.setdefault(k, v)
-
-        if "c" in vertices_params:
-            vertices_params["c"] = map_colors(
-                vertices_params["c"], cmap=vertices_params.get("cmap", cmap)
-            )
-            vertices_params.pop("cmap", None)
         ax.scatter(
             *vertices.T,
             **vertices_params,
@@ -117,16 +100,14 @@ def simplex(
         lambda x: np.sum(x.reshape(-1, 1) * vertices, 0), 1, points
     )
 
-    kwargs_default = {
+    # Draw the points
+    params_default = {
         "c": "lightgray",
         "label": "Observations",
+        "cmap": cmap,
     }
 
-    if "color" in params:
-        kwargs_default.pop("c")
-
-    for k, v in kwargs_default.items():
-        params.setdefault(k, v)
+    params = process_params(n, params, params_default)
 
     ax.scatter(points_projected[:, 0], points_projected[:, 1], **params)
 

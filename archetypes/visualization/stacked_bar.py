@@ -1,10 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import to_rgba_array
 
-from archetypes.visualization.utils import get_cmap
-
-from .utils import map_colors
+from .utils import get_cmap, process_params
 
 
 def stacked_bar(
@@ -39,42 +36,30 @@ def stacked_bar(
 
     labels = np.arange(m)
 
-    params_default = {
-        "width": 1,
-    }
-
-    if params is None:
-        params = params_default
-
-    for k, v in params_default.items():
-        params.setdefault(k, v)
-
-    # check if cmap is in params, otherwise use default
     cmap = get_cmap()
 
+    params_default = {
+        "width": 1,
+        "cmap": cmap,
+        "c": range(n),
+    }
+
+    if "edgecolor" not in params:
+        if "color" in params:
+            params["edgecolor"] = params["color"].copy()
+        elif "c" in params:
+            params["edgecolor"] = params["c"].copy()
+        else:
+            params_default["edgecolor"] = range(n)
+
+    # check if cmap is in params, otherwise use default
+    params = process_params(n, params, params_default)
+    edgecolor = params.pop("edgecolor")
     if "color" in params:
-        if isinstance(params["color"], str):
-            params["color"] = [params["color"]] * n
-        elif isinstance(params["color"], list) and len(params["color"]) != n:
-            raise ValueError(f"Length of color list must be {n}.")
         color = params.pop("color")
     else:
-        color = list(range(n))
-
-    color = map_colors(color, cmap=cmap)
-
-    color[:, -1] = 0.5  # set alpha to 0.5 for bars
-
-    if "edgecolor" in params:
-        if isinstance(params["edgecolor"], str):
-            params["edgecolor"] = [params["edgecolor"]] * n
-        elif isinstance(params["edgecolor"], list) and len(params["edgecolor"]) != n:
-            raise ValueError(f"Length of edgecolor list must be {n}.")
-        edgecolor = params.pop("edgecolor")
-        edgecolor = to_rgba_array(edgecolor)
-    else:
-        edgecolor = color.copy()
-        edgecolor[:, -1] = 1  # set alpha to 1 for edges
+        color = params.pop("c")
+    color[:, -1] = 0.5  # set alpha to 0.5
 
     # Plot the points
     bottom = np.zeros(m)
