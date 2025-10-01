@@ -488,6 +488,8 @@ def _pgd_like_optimize_aa(
                 rss,
             )
 
+        archetypes = einsum([B[0], X, B[1].T])
+
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
         if verbose and i % 10 == 0:
@@ -510,11 +512,13 @@ def _pgd_like_update_A_inplace(
     beta,
     rss,
 ):
+
     for i, A_i in enumerate(A):
         # gradient wrt A
         if i == 0:
             A_grad[i] = einsum([A[0], B[0], X, B[1].T, A[1].T, A[1], B[1], X.T, B[0].T])
             A_grad[i] -= einsum([X, A[1], B[1], X.T, B[0].T])
+
         else:
             A_grad[i] = einsum([B[1], X.T, B[0].T, A[0].T, A[0], B[0], X, B[1].T, A[1].T])
             A_grad[i] -= einsum([B[1], X.T, B[0].T, A[0].T, X])
