@@ -1,6 +1,7 @@
 from numbers import Integral, Real
 
 import numpy as np
+import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin, _fit_context
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
@@ -103,7 +104,7 @@ class AA(TransformerMixin, BaseEstimator):
         n_init=1,
         init_kwargs=None,
         save_init=False,
-        method="nnls",
+        method="pgd",
         method_kwargs=None,
         verbose=False,
         random_state=None,
@@ -139,13 +140,15 @@ class AA(TransformerMixin, BaseEstimator):
             init_archetype_func = aa_plus_plus
 
         init_kwargs = {} if self.init_kwargs is None else self.init_kwargs
+
         B = np.zeros((self.n_archetypes, n_samples), dtype=X.dtype)
         ind = init_archetype_func(X, self.n_archetypes, random_state=rng, **init_kwargs)
         for i, j in enumerate(ind):
             B[i, j] = 1
 
-        archetypes = X[ind]
+        archetypes = (X.T @ B.T).T
 
+        # Check if X is sparse
         A = np.zeros((n_samples, self.n_archetypes), dtype=X.dtype)
         ind = rng.choice(self.n_archetypes, n_samples, replace=True)
         for i, j in enumerate(ind):
@@ -160,9 +163,7 @@ class AA(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
-            Training instances to compute the archetypes.
-            It must be noted that the data will be converted to C ordering,
-            which will cause a memory copy if the given data is not C-contiguous.
+            Training instances to compute the archetypes. Must be a sparse matrix in CSR format.
         y : Ignored
             Not used, present here for API consistency by convention.
 
@@ -191,8 +192,14 @@ class AA(TransformerMixin, BaseEstimator):
             X transformed in the new space.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, dtype=[np.float64, np.float32], reset=False)
-        X = np.ascontiguousarray(X)
+        X = validate_data(self, X, dtype=[np.float64, np.float32], reset=False, accept_sparse=True)
+
+        if not sp.issparse(X):
+            X = np.ascontiguousarray(X)
+        else:
+            if not sp.isspmatrix_csr(X):
+                X = sp.csr_matrix(X)
+
         archetypes = self.archetypes_
 
         if self.n_archetypes_ == 1:
@@ -200,7 +207,10 @@ class AA(TransformerMixin, BaseEstimator):
             return np.ones((n_samples, self.n_archetypes_), dtype=X.dtype)
 
         if self.method == "nnls":
-            transform_func = nnls_transform
+            if sp.issparse(X):
+                raise ValueError("NNLS method does not support sparse input.")
+            else:
+                transform_func = nnls_transform
         elif self.method == "pgd":
             transform_func = pgd_transform
         elif self.method == "pseudo_pgd":
@@ -229,9 +239,14 @@ class AA(TransformerMixin, BaseEstimator):
         A : ndarray of shape (n_samples, n_archetypes)
             X transformed in the new space.
         """
-        X = validate_data(self, X, dtype=[np.float64, np.float32])
+        X = validate_data(self, X, dtype=[np.float64, np.float32], accept_sparse=True)
         self._check_params_vs_data(X)
-        X = np.ascontiguousarray(X)
+
+        if not sp.issparse(X):
+            X = np.ascontiguousarray(X)
+        else:
+            if not sp.isspmatrix_csr(X):
+                X = sp.csr_matrix(X)
 
         if self.n_archetypes == 1:
             n_samples = X.shape[0]
@@ -246,7 +261,10 @@ class AA(TransformerMixin, BaseEstimator):
 
         else:
             if self.method == "nnls":
-                fit_transform_func = nnls_fit_transform
+                if sp.issparse(X):
+                    raise ValueError("NNLS method does not support sparse input.")
+                else:
+                    fit_transform_func = nnls_fit_transform
             elif self.method == "pgd":
                 fit_transform_func = pgd_fit_transform
             elif self.method == "pseudo_pgd":
@@ -410,20 +428,19 @@ def _pgd_like_optimize_aa(
 ):
 
     # precomputing and memory allocation
-    BX = archetypes
-    XXt = X @ X.T
-    ABX = A @ BX
-    ABX -= X
-    XXtBt = X @ BX.T
-    BXXtBt = BX @ BX.T
-    AtXXt = A.T @ XXt
+    BX = archetypes  # dense
+    XXt = X @ X.T  # Sparse
+    XXtBt = X @ BX.T  # Dense
+    BXXtBt = BX @ BX.T  # Dense
+    AtXXt = A.T @ XXt  # Dense
 
     A_grad = np.empty_like(A)
-    B_grad = np.empty_like(B)
     A_new = np.empty_like(A)
+    B_grad = np.empty_like(B)
     B_new = np.empty_like(B)
 
-    rss = squared_norm(ABX)  # Now ABX stores ABX - X
+    rss = float(XXt.trace() - 2 * (A.T @ XXtBt).trace() + np.trace(BXXtBt @ A.T @ A))
+
     loss_list = [
         rss,
     ]
@@ -438,7 +455,7 @@ def _pgd_like_optimize_aa(
             B,
             BX,
             XXt,
-            ABX,
+            None,
             XXtBt,
             BXXtBt,
             A_grad,
@@ -457,7 +474,7 @@ def _pgd_like_optimize_aa(
                 B,
                 BX,
                 XXt,
-                ABX,
+                None,
                 AtXXt,
                 XXtBt,
                 BXXtBt,
@@ -477,7 +494,7 @@ def _pgd_like_optimize_aa(
         if convergence:
             break
 
-    return A, B, archetypes, i, loss_list, convergence
+    return A, B, BX, i, loss_list, convergence
 
 
 def _pgd_like_update_A_inplace(
@@ -497,11 +514,11 @@ def _pgd_like_update_A_inplace(
     beta,
     rss,
 ):
-    # gradient wrt A
+
     A_grad = np.matmul(A, BXXtBt, out=A_grad)
     A_grad -= XXtBt
+
     if pseudo_pgd:
-        # TODO: malloc here!
         A_grad -= np.expand_dims(np.einsum("ij,ij->i", A, A_grad), axis=1)
         project = l1_normalize_proj
     else:
@@ -512,12 +529,17 @@ def _pgd_like_update_A_inplace(
     # then reduce the step size until we make any improvement wrt the loss
     improved = False
     for _ in range(max_iter_optimizer):
-        A_new = np.multiply(-step_size_A, A_grad, out=A_new)
+        if sp.issparse(A):
+            A_new = -step_size_A * A_grad
+        else:
+            A_new = np.multiply(-step_size_A, A_grad, out=A_new)
         A_new += A
         project(A_new)
-        ABX = np.matmul(A_new, BX, out=ABX)
-        ABX -= X
-        rss_new = squared_norm(ABX)
+
+        rss_new = float(
+            XXt.trace() - 2 * (A_new.T @ XXtBt).trace() + np.trace(BXXtBt @ (A_new.T @ A_new))
+        )
+
         # if we make any improvement, break
         improved = rss_new < rss
         if improved:
@@ -527,6 +549,7 @@ def _pgd_like_update_A_inplace(
         step_size_A *= beta
 
     # fix new A and update rss
+
     if improved:
         np.copyto(A, A_new)
         rss = rss_new
@@ -552,9 +575,12 @@ def _pgd_like_update_B_inplace(
     beta,
     rss,
 ):
-    ABX += X
-    B_grad = np.linalg.multi_dot([A.T, ABX, X.T], out=B_grad)
-    B_grad -= np.matmul(A.T, XXt, out=AtXXt)
+
+    temp = np.linalg.multi_dot([A.T, A, BX])
+    np.copyto(B_grad, (X @ temp.T).T)
+    np.copyto(AtXXt, (XXt @ A).T)
+    B_grad -= AtXXt
+
     if pseudo_pgd:
         # TODO: malloc here!
         B_grad -= np.expand_dims(np.einsum("ij,ij->i", B, B_grad), axis=1)
@@ -567,10 +593,15 @@ def _pgd_like_update_B_inplace(
     for _ in range(max_iter_optimizer):
         B_new = np.multiply(-step_size_B, B_grad, out=B_new)
         B_new += B
+
         project(B_new)
-        ABX = np.linalg.multi_dot([A, B_new, X], out=ABX)
-        ABX -= X
-        rss_new = squared_norm(ABX)
+
+        rss_new = float(
+            XXt.trace()
+            - 2 * (AtXXt @ B_new.T).trace()
+            + np.trace(B_new @ (XXt @ B_new.T) @ A.T @ A)
+        )
+
         improved = rss_new < rss
         if improved:
             step_size_B /= beta
@@ -578,9 +609,10 @@ def _pgd_like_update_B_inplace(
         step_size_B *= beta
 
     if improved:
+
         np.copyto(B, B_new)
-        BX = np.matmul(B, X, out=BX)
-        XXtBt = np.matmul(X, BX.T, out=XXtBt)
+        np.copyto(BX, B @ X)
+        np.copyto(XXtBt, X @ BX.T)
         BXXtBt = np.matmul(B, XXtBt, out=BXXtBt)
         rss = rss_new
 

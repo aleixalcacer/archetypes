@@ -1,13 +1,15 @@
 from numbers import Integral, Real
 
 import numpy as np
+import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin, _fit_context
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import squared_norm
 from sklearn.utils.validation import validate_data
 
-from ..utils import einsum, nnls
+from archetypes.utils import einsum, nnls
+
 from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 from ._projection import l1_normalize_proj, unit_simplex_proj
 
@@ -36,7 +38,7 @@ class BiAA(TransformerMixin, BaseEstimator):
         Additional keyword arguments to pass to the initialization method.
     save_init : bool, default=False
         If True, save the initial archetypes in the attribute `archetypes_init_`,
-    method: str, default='nnls'
+    method: str, default='pgd'
         The optimization method to use for the archetypes and the coefficients,
         must be one of the following: 'nnls, pgd, pseudo_pgd'. See :ref:`optimization-methods`.
     method_kwargs : dict, default=None
@@ -105,7 +107,7 @@ class BiAA(TransformerMixin, BaseEstimator):
         n_init=1,
         init_kwargs=None,
         save_init=False,
-        method="nnls",
+        method="pgd",
         method_kwargs=None,
         verbose=False,
         random_state=None,
@@ -159,7 +161,7 @@ class BiAA(TransformerMixin, BaseEstimator):
 
         B = [B_0, B_1]
 
-        archetypes = einsum([B[0], X, B[1].T])
+        archetypes = einsum([B[0], X @ B[1].T])
 
         A_0 = np.zeros((n_samples_0, self.n_archetypes[0]), dtype=X.dtype)
         ind0 = rng.choice(self.n_archetypes[0], n_samples_0, replace=True)
@@ -182,9 +184,7 @@ class BiAA(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : array-like of shape (n_samples_0, n_samples_1)
-            Training instances to compute the archetypes.
-            It must be noted that the data will be converted to C ordering,
-            which will cause a memory copy if the given data is not C-contiguous.
+            Training instances to compute the archetypes. Must be a sparse matrix in CSR format.
         y : Ignored
             Not used, present here for API consistency by convention.
 
@@ -206,6 +206,9 @@ class BiAA(TransformerMixin, BaseEstimator):
         ----------
         X : array-like of shape (n_samples, n_features)
             New data to transform.
+            It must be noted that the data will be converted to C ordering,
+            which will cause a memory copy if the given data is not C-contiguous.
+            If a sparse matrix is passed, a copy will be made if it’s not in CSR format.
 
         Returns
         -------
@@ -225,6 +228,9 @@ class BiAA(TransformerMixin, BaseEstimator):
         ----------
         X : array-like of shape (n_samples, n_features)
             New data to transform.
+            It must be noted that the data will be converted to C ordering,
+            which will cause a memory copy if the given data is not C-contiguous.
+            If a sparse matrix is passed, a copy will be made if it’s not in CSR format.
         y : Ignored
             Not used, present here for API consistency by convention.
 
@@ -233,9 +239,14 @@ class BiAA(TransformerMixin, BaseEstimator):
         A : ndarray of shape (n_samples, n_archetypes)
             X transformed in the new space.
         """
-        X = validate_data(self, X, dtype=[np.float64, np.float32])
+        X = validate_data(self, X, dtype=[np.float64, np.float32], accept_sparse=True)
         self._check_params_vs_data(X)
-        X = np.ascontiguousarray(X)
+
+        if not sp.issparse(X):
+            X = np.ascontiguousarray(X)
+        else:
+            if not sp.isspmatrix_csr(X):
+                X = sp.csr_matrix(X)
 
         if self.n_archetypes == (1, 1):
             n_samples_0 = X.shape[0]
@@ -251,7 +262,7 @@ class BiAA(TransformerMixin, BaseEstimator):
                 np.ones((n_samples_1, 1), dtype=X.dtype),
             ]
 
-            best_rss = squared_norm(X - archetypes_)
+            best_rss = squared_norm(X - A_[0] @ archetypes_ @ A_[1].T)
             n_iter_ = 0
             loss_ = [
                 best_rss,
@@ -259,8 +270,11 @@ class BiAA(TransformerMixin, BaseEstimator):
 
         else:
             if self.method == "nnls":
-                fit_transform_func = nnls_fit_transform
-            elif self.method == "pgd":
+                if sp.issparse(X):
+                    raise ValueError("NNLS method does not support sparse data.")
+                else:
+                    fit_transform_func = nnls_fit_transform
+            if self.method == "pgd":
                 fit_transform_func = pgd_fit_transform
             elif self.method == "pseudo_pgd":
                 fit_transform_func = pseudo_pgd_fit_transform
@@ -452,7 +466,16 @@ def _pgd_like_optimize_aa(
     A_new = [np.empty_like(A[0]), np.empty_like(A[1])]
     B_new = [np.empty_like(B[0]), np.empty_like(B[1])]
 
-    rss = squared_norm(X - einsum([A[0], B[0], X, B[1].T, A[1].T]))
+    TXXt = (X @ X.T).trace()
+    B0XB1t = einsum([B[0], X @ B[1].T])
+    A0tXA1 = einsum([A[0].T, X @ A[1]])
+
+    rss = (
+        TXXt
+        - 2 * (X @ A[1] @ B0XB1t.T @ A[0].T).trace()
+        + (B0XB1t @ A[1].T @ A[1] @ B0XB1t.T @ A[0].T @ A[0]).trace()
+    )
+
     loss_list = [
         rss,
     ]
@@ -467,6 +490,9 @@ def _pgd_like_optimize_aa(
             B,
             A_grad,
             A_new,
+            TXXt,
+            B0XB1t,
+            A0tXA1,
             pseudo_pgd,
             step_size_A,
             max_iter_optimizer,
@@ -481,6 +507,9 @@ def _pgd_like_optimize_aa(
                 B,
                 B_grad,
                 B_new,
+                TXXt,
+                B0XB1t,
+                A0tXA1,
                 pseudo_pgd,
                 step_size_B,
                 max_iter_optimizer,
@@ -488,8 +517,7 @@ def _pgd_like_optimize_aa(
                 rss,
             )
 
-        archetypes = einsum([B[0], X, B[1].T])
-
+        np.copyto(archetypes, B0XB1t)
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
         if verbose and i % 10 == 0:
@@ -506,22 +534,24 @@ def _pgd_like_update_A_inplace(
     B,
     A_grad,
     A_new,
+    TXXt,
+    B0XB1t,
+    A0tXA1,
     pseudo_pgd,
     step_size_A,
     max_iter_optimizer,
     beta,
     rss,
 ):
-
     for i, A_i in enumerate(A):
         # gradient wrt A
         if i == 0:
-            A_grad[i] = einsum([A[0], B[0], X, B[1].T, A[1].T, A[1], B[1], X.T, B[0].T])
-            A_grad[i] -= einsum([X, A[1], B[1], X.T, B[0].T])
+            A_grad[i] = einsum([A[0], B0XB1t, A[1].T, A[1], B0XB1t.T])
+            A_grad[i] -= einsum([X @ A[1], B0XB1t.T])
 
         else:
-            A_grad[i] = einsum([B[1], X.T, B[0].T, A[0].T, A[0], B[0], X, B[1].T, A[1].T])
-            A_grad[i] -= einsum([B[1], X.T, B[0].T, A[0].T, X])
+            A_grad[i] = einsum([B0XB1t.T, A[0].T, A[0], B0XB1t, A[1].T])
+            A_grad[i] -= einsum([B0XB1t.T, (X.T @ A[0]).T])
             A_grad[i] = A_grad[i].T
 
         if pseudo_pgd:
@@ -540,9 +570,17 @@ def _pgd_like_update_A_inplace(
             A_new[i] += A_i
             project(A_new[i])
             if i == 0:
-                rss_new = squared_norm(X - einsum([A_new[i], B[0], X, B[1].T, A[1].T]))
+                rss_new = (
+                    TXXt
+                    - 2 * (X @ A[1] @ B0XB1t.T @ A_new[0].T).trace()
+                    + (B0XB1t @ A[1].T @ A[1] @ B0XB1t.T @ A_new[0].T @ A_new[0]).trace()
+                )
             else:
-                rss_new = squared_norm(X - einsum([A[0], B[0], X, B[1].T, A_new[i].T]))
+                rss_new = (
+                    TXXt
+                    - 2 * (X @ A_new[1] @ B0XB1t.T @ A[0].T).trace()
+                    + (B0XB1t @ A_new[1].T @ A_new[1] @ B0XB1t.T @ A[0].T @ A[0]).trace()
+                )
 
             # if we make any improvement, break
             improved = rss_new < rss
@@ -555,6 +593,7 @@ def _pgd_like_update_A_inplace(
         # fix new A and update rss
         if improved:
             np.copyto(A[i], A_new[i])
+            np.copyto(A0tXA1, A[0].T @ (X @ A[1]))
             rss = rss_new
 
     return rss, step_size_A
@@ -566,6 +605,9 @@ def _pgd_like_update_B_inplace(
     B,
     B_grad,
     B_new,
+    TXXt,
+    B0XB1t,
+    A0tXA1,
     pseudo_pgd,
     step_size_B,
     max_iter_optimizer,
@@ -576,11 +618,11 @@ def _pgd_like_update_B_inplace(
     for i, B_i in enumerate(B):
 
         if i == 0:
-            B_grad[i] = einsum([A[0].T, A[0], B[0], X, B[1].T, A[1].T, A[1], B[1], X.T])
-            B_grad[i] -= einsum([A[0].T, X, A[1], B[1], X.T])
+            B_grad[i] = einsum([A[0].T, A[0], B0XB1t, A[1].T, A[1], B[1] @ X.T])
+            B_grad[i] -= einsum([A0tXA1, B[1] @ X.T])
         else:
-            B_grad[i] = einsum([X.T, B[0].T, A[0].T, A[0], B[0], X, B[1].T, A[1].T, A[1]])
-            B_grad[i] -= einsum([X.T, B[0].T, A[0].T, X, A[1]])
+            B_grad[i] = einsum([X.T @ B[0].T, A[0].T, A[0], B0XB1t, A[1].T, A[1]])
+            B_grad[i] -= einsum([X.T @ B[0].T, A0tXA1])
             B_grad[i] = B_grad[i].T
 
         if pseudo_pgd:
@@ -597,10 +639,21 @@ def _pgd_like_update_B_inplace(
             B_new[i] += B_i
             project(B_new[i])
             if i == 0:
-                rss_new = squared_norm(X - einsum([A[0], B_new[i], X, B[1].T, A[1].T]))
+                rss_new = (
+                    TXXt
+                    - 2 * einsum([A0tXA1, B[1], X.T @ B_new[0].T]).trace()
+                    + einsum(
+                        [B_new[0], X @ B[1].T, A[1].T, A[1], B[1], X.T @ B_new[0].T, A[0].T, A[0]]
+                    ).trace()
+                )
             else:
-                rss_new = squared_norm(X - einsum([A[0], B[0], X, B_new[i].T, A[1].T]))
-
+                rss_new = (
+                    TXXt
+                    - 2 * einsum([A0tXA1, B_new[1], X.T @ B[0].T]).trace()
+                    + einsum(
+                        [B[0], X @ B_new[1].T, A[1].T, A[1], B_new[1], X.T @ B[0].T, A[0].T, A[0]]
+                    ).trace()
+                )
             improved = rss_new < rss
             if improved:
                 step_size_B[i] /= beta
@@ -609,6 +662,7 @@ def _pgd_like_update_B_inplace(
 
         if improved:
             np.copyto(B[i], B_new[i])
+            np.copyto(B0XB1t, einsum([B[0], X @ B[1].T]))
             rss = rss_new
 
     return rss, step_size_B

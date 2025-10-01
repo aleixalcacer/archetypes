@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 
 from archetypes import AA, ADA, BiAA
 from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
@@ -18,9 +19,15 @@ from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
         ("pseudo_pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
     ],
 )
-def test_AA(method, method_kwargs):
+@pytest.mark.parametrize("data_format", ["dense", "sparse"])
+def test_AA(method, method_kwargs, data_format):
     shape = (100, 2)
     data = np.random.uniform(size=(shape))
+
+    if data_format == "sparse":
+        if method == "nnls":
+            pytest.skip("nnls does not support sparse input")
+        data = csr_matrix(data)
 
     n_archetypes = 4
     model = AA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
@@ -46,9 +53,15 @@ def test_AA(method, method_kwargs):
         ("pseudo_pgd", {"max_iter_optimizer": 15, "beta": 0.7}),
     ],
 )
-def test_BiAA(method, method_kwargs):
+@pytest.mark.parametrize("data_format", ["dense", "sparse"])
+def test_BiAA(method, method_kwargs, data_format):
     shape = (100, 100)
     data = np.random.uniform(size=(shape))
+
+    if data_format == "sparse":
+        if method == "nnls":
+            pytest.skip("nnls does not support sparse input")
+        data = csr_matrix(data)
 
     n_archetypes = (5, 4)
     model = BiAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
