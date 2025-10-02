@@ -4,6 +4,7 @@ from ._biaa import BiAA
 from ._fair_aa import FairAA
 from ._fair_kernel_aa import FairKernelAA
 from ._kernel_aa import KernelAA
+from ._naa import NAA
 from ._sym_biaa import SymmetricBiAA
 
 __all__ = [
@@ -11,6 +12,7 @@ __all__ = [
     "FairAA",
     "ADA",
     "BiAA",
+    "NAA",
     "SymmetricBiAA",
     "KernelAA",
     "FairKernelAA",

@@ -108,3 +108,35 @@ def pmc(X, B, **kwargs):
     B[np.arange(n_archetypes), archetypes_index] = 1
 
     return B
+
+
+def generate_loss(X, A, B):
+    """
+    Generates a loss function based on the provided params A and B.
+    f(X, A_0, ..., A_n, B_0, ..., B_m)
+
+    It was designed to compute individual gradients with autograd, but
+    performance was not satisfactory.
+    """
+
+    # nombres dinámicos para los parámetros
+    params_A = [f"A_{i}" for i in range(len(A))]
+    params_B = [f"B_{i}" for i in range(len(B))]
+    params = ["X"] + params_A + params_B
+
+    # cuerpo de la nueva función en string
+    func_code = f"""
+def loss({', '.join(params)}):
+    A = [{', '.join(params_A)}]
+    B = [{', '.join(params_B)}]
+
+    return squared_norm(X - arch_einsum(A, arch_einsum(B, X)))
+"""
+
+    # crear un diccionario donde guardar la función
+    env = {
+        "squared_norm": squared_norm,
+        "arch_einsum": arch_einsum,
+    }
+    exec(func_code, env)
+    return env["loss"]
