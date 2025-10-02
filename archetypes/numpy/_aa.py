@@ -529,10 +529,7 @@ def _pgd_like_update_A_inplace(
     # then reduce the step size until we make any improvement wrt the loss
     improved = False
     for _ in range(max_iter_optimizer):
-        if sp.issparse(A):
-            A_new = -step_size_A * A_grad
-        else:
-            A_new = np.multiply(-step_size_A, A_grad, out=A_new)
+        A_new = np.multiply(-step_size_A, A_grad, out=A_new)
         A_new += A
         project(A_new)
 
