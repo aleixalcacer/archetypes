@@ -26,6 +26,7 @@ This section provides an overview of the main algorithms implemented in the `arc
    ADA
    BiAA
    SymmetricBiAA
+   NAA
 
 
 Visualization
