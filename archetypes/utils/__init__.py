@@ -3,7 +3,16 @@ from .check_generator import (
     check_generator_numpy,
     check_generator_torch,
 )
-from .utils import arch_einsum, einsum, nnls, partial_arch_einsum, pmc
+from .utils import (
+    arch_einsum,
+    einsum,
+    kron_except,
+    mode_product,
+    nnls,
+    partial_arch_einsum,
+    pmc,
+    unfold,
+)
 
 __all__ = [
     "nnls",
@@ -14,4 +23,7 @@ __all__ = [
     "check_generator_jax",
     "check_generator_numpy",
     "check_generator_torch",
+    "unfold",
+    "kron_except",
+    "mode_product",
 ]
