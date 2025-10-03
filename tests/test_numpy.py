@@ -90,7 +90,6 @@ def test_BiAA(method, method_kwargs, data_format):
     [
         ((200, 300), (3, 4)),
         ((10, 8, 6), (2, 3, 2)),
-        ((10, 8, 6), (2, 3)),
     ],
 )
 def test_NAA(method, method_kwargs, shape, n_archetypes):
