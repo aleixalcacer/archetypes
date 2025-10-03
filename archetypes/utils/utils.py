@@ -140,3 +140,39 @@ def loss({', '.join(params)}):
     }
     exec(func_code, env)
     return env["loss"]
+
+
+# NAA chatgpt
+
+
+def unfold(X, mode):
+    """Matricización modo-n (saca la dimensión mode a filas)."""
+    return np.reshape(np.moveaxis(X, mode, 0), (X.shape[mode], -1))
+
+
+def mode_product(X, M, mode):
+    """
+    Producto modo-n seguro, que mantiene el orden de los ejes.
+    X: tensor (I_0 x I_1 x ... x I_{N-1})
+    M: matriz (J_n x I_n)
+    mode: modo en el que se aplica
+    """
+    Xn = unfold(X, mode)  # (I_n, prod_otros)
+    Yn = M @ Xn  # (J_n, prod_otros)
+
+    # reconstruir el shape correcto
+    shape_new = list(X.shape)
+    shape_new = [shape_new[mode]] + shape_new[:mode] + shape_new[mode + 1 :]
+
+    # reconstruir el tensor
+    return np.moveaxis(Yn.reshape(shape_new), 0, mode)
+
+
+def kron_except(C_list, skip):
+    """Kronecker de todas las matrices en C_list excepto la de índice skip."""
+    K = np.array([[1]])  # identidad neutral
+    for i in reversed(range(len(C_list))):
+        if i == skip:
+            continue
+        K = np.kron(C_list[i], K)
+    return K

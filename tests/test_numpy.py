@@ -76,6 +76,40 @@ def test_BiAA(method, method_kwargs, data_format):
         assert np.allclose(trans_data[i].sum(axis=1), 1.0)
 
 
+@pytest.mark.parametrize(
+    "method,method_kwargs",
+    [
+        ("pgd", None),
+        ("pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
+        ("pseudo_pgd", None),
+        ("pseudo_pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
+    ],
+)
+@pytest.mark.parametrize(
+    "shape,n_archetypes",
+    [
+        ((200, 300), (3, 4)),
+        ((10, 8, 6), (2, 3, 2)),
+        ((10, 8, 6), (2, 3)),
+    ],
+)
+def test_NAA(method, method_kwargs, shape, n_archetypes):
+    from archetypes import NAA
+
+    data = np.random.uniform(size=(shape))
+
+    model = NAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    trans_data = model.fit_transform(data)
+
+    model = NAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = model.fit(data)
+
+    for i in range(len(n_archetypes)):
+        assert trans_data[i].shape == (shape[i], n_archetypes[i])
+        assert np.allclose(model.coefficients_[i].sum(axis=1), 1.0)
+        assert np.allclose(trans_data[i].sum(axis=1), 1.0)
+
+
 @pytest.mark.parametrize("proj_func", [unit_simplex_proj, l1_normalize_proj])
 def test_projection(proj_func):
     x = np.random.uniform(size=(100, 4))
