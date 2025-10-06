@@ -1,14 +1,14 @@
 from numbers import Integral, Real
 
-import autograd.numpy as np
-from autograd import grad
+import numpy as np
+from pykronecker import KroneckerProduct as Kron
 from sklearn.base import BaseEstimator, TransformerMixin, _fit_context
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import squared_norm
 from sklearn.utils.validation import validate_data
 
-from archetypes.utils import arch_einsum, kron_except, unfold
+from archetypes.utils import arch_einsum, unfold
 
 from ._inits import aa_plus_plus, furthest_first, furthest_sum, uniform
 from ._projection import l1_normalize_proj, unit_simplex_proj
@@ -402,9 +402,6 @@ def _pgd_like_optimize_aa(
     A_new = [np.empty_like(a) for a in A]
     B_new = [np.empty_like(b) for b in B]
 
-    A_grad_f = grad(normal_loss, 1)
-    B_grad_f = grad(normal_loss, 2)
-
     C = [a @ b for a, b in zip(A, B)]
 
     # TODO: Explore ways to avoid recomputing all gradients on each iteration.
@@ -426,7 +423,6 @@ def _pgd_like_optimize_aa(
             B,
             C,
             A_grad,
-            A_grad_f,
             A_new,
             pseudo_pgd,
             step_size_A,
@@ -442,7 +438,6 @@ def _pgd_like_optimize_aa(
                 B,
                 C,
                 B_grad,
-                B_grad_f,
                 B_new,
                 pseudo_pgd,
                 step_size_B,
@@ -469,7 +464,6 @@ def _pgd_like_update_A_inplace(
     B,
     C,
     A_grad,
-    A_grad_f,
     A_new,
     pseudo_pgd,
     step_size_A,
@@ -480,12 +474,10 @@ def _pgd_like_update_A_inplace(
 
     for i, A_i in enumerate(A):
         Xn = unfold(X, i)
-        Mn = kron_except(C, i)  # Kronecker de los modos distintos a n
-
-        XnMnt = Xn @ Mn.T
-        XnMnt_tBt = XnMnt.T @ B[i].T
-
-        A_grad[i] = -Xn @ XnMnt_tBt + C[i] @ XnMnt @ XnMnt_tBt
+        # Mn = kron_except(C, i)  # Kronecker de los modos distintos a n
+        Mn = Kron([C[j] for j in range(len(C)) if j != i])
+        MnXntBt = Mn @ (Xn.T @ B[i].T)
+        A_grad[i] = -Xn @ MnXntBt + C[i] @ (Xn @ (Mn.T @ MnXntBt))
 
         if pseudo_pgd:
             # TODO: malloc here!
@@ -529,7 +521,6 @@ def _pgd_like_update_B_inplace(
     B,
     C,
     B_grad,
-    B_grad_f,
     B_new,
     pseudo_pgd,
     step_size_B,
@@ -540,11 +531,9 @@ def _pgd_like_update_B_inplace(
 
     for i, B_i in enumerate(B):
         Xn = unfold(X, i)
-        Mn = kron_except(C, i)  # Kronecker de los modos distintos a n
-
-        XnMnt = Xn @ Mn.T  # precompute this product
-
-        B_grad[i] = -A[i].T @ Xn @ XnMnt.T + A[i].T @ C[i] @ XnMnt @ XnMnt.T
+        # Mn = kron_except(C, i)  # Kronecker de los modos distintos a n
+        Mn = Kron([C[j] for j in range(len(C)) if j != i])
+        B_grad[i] = ((-A[i].T @ Xn) @ Mn) @ Xn.T + ((((A[i].T @ C[i]) @ Xn) @ Mn.T) @ Mn) @ Xn.T
 
         if pseudo_pgd:
             # TODO: malloc here!

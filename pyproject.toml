@@ -35,8 +35,8 @@ dependencies = [
     "scikit-learn>=1.6",
     "scipy>=1.8,<1.12",  # nnls issue, it will be fixed in 1.15
     "matplotlib>=3.8",
-    "autograd",
     "opt_einsum",
+    "pykronecker",
 ]
 
 [project.urls]
