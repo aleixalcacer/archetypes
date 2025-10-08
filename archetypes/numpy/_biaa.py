@@ -357,8 +357,15 @@ def nnls_transform_B(X, A, B, **kwargs):
 
 def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
 
+    archetypes = einsum([B[0], X @ B[1].T])
+
+    rss = (
+        -2 * einsum([A[0].T, X, A[1], archetypes.T]).trace()
+        + einsum([archetypes, A[1].T, A[1], archetypes.T, A[0].T, A[0]]).trace()
+    ) / X.size
+
     loss_list = [
-        squared_norm(X - einsum([A[0], archetypes, A[1].T])),
+        rss,
     ]
 
     for i in range(1, max_iter + 1):
@@ -367,7 +374,11 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
         B = nnls_transform_B(X, A, B, **kwargs)
         archetypes = einsum([B[0], X, B[1].T])
 
-        rss = squared_norm(X - einsum([A[0], archetypes, A[1].T]))
+        rss = (
+            -2 * einsum([A[0].T, X, A[1], archetypes.T]).trace()
+            + einsum([archetypes, A[1].T, A[1], archetypes.T, A[0].T, A[0]]).trace()
+        ) / X.size
+
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
         if verbose and i % 10 == 0:  # Verbose mode (print RSS)
@@ -466,15 +477,15 @@ def _pgd_like_optimize_aa(
     A_new = [np.empty_like(A[0]), np.empty_like(A[1])]
     B_new = [np.empty_like(B[0]), np.empty_like(B[1])]
 
-    TXXt = (X @ X.T).trace()
+    TXXt = None
     B0XB1t = einsum([B[0], X @ B[1].T])
     A0tXA1 = einsum([A[0].T, X @ A[1]])
 
     rss = (
-        TXXt
-        - 2 * (X @ A[1] @ B0XB1t.T @ A[0].T).trace()
-        + (B0XB1t @ A[1].T @ A[1] @ B0XB1t.T @ A[0].T @ A[0]).trace()
-    )
+        # TXXt
+        -2 * einsum([A[0].T, X, A[1], B0XB1t.T]).trace()
+        + einsum([B0XB1t, A[1].T, A[1], B0XB1t.T, A[0].T, A[0]]).trace()
+    ) / X.size
 
     loss_list = [
         rss,
@@ -546,12 +557,22 @@ def _pgd_like_update_A_inplace(
     for i, A_i in enumerate(A):
         # gradient wrt A
         if i == 0:
-            A_grad[i] = einsum([A[0], B0XB1t, A[1].T, A[1], B0XB1t.T])
-            A_grad[i] -= einsum([X @ A[1], B0XB1t.T])
+            # temporary variables to save computation
+            XA1B0XB1tT = einsum([X, A[1], B0XB1t.T])
+            B0XB1tA1tA1B0XB1tT = einsum([B0XB1t, A[1].T, A[1], B0XB1t.T])
+
+            # gradient computation
+            A_grad[i] = einsum([A[0], B0XB1tA1tA1B0XB1tT])
+            A_grad[i] -= XA1B0XB1tT
 
         else:
-            A_grad[i] = einsum([B0XB1t.T, A[0].T, A[0], B0XB1t, A[1].T])
-            A_grad[i] -= einsum([B0XB1t.T, (X.T @ A[0]).T])
+            # temporary variables to save computation
+            B0XB1tTA0tX = einsum([B0XB1t.T, (X.T @ A[0]).T])
+            B0XB1tTA0tA0B0XB1t = einsum([B0XB1t.T, A[0].T, A[0], B0XB1t])
+
+            # gradient computation
+            A_grad[i] = einsum([B0XB1tTA0tA0B0XB1t, A[1].T])
+            A_grad[i] -= B0XB1tTA0tX
             A_grad[i] = A_grad[i].T
 
         if pseudo_pgd:
@@ -571,17 +592,16 @@ def _pgd_like_update_A_inplace(
             project(A_new[i])
             if i == 0:
                 rss_new = (
-                    TXXt
-                    - 2 * (X @ A[1] @ B0XB1t.T @ A_new[0].T).trace()
-                    + (B0XB1t @ A[1].T @ A[1] @ B0XB1t.T @ A_new[0].T @ A_new[0]).trace()
-                )
+                    # TXXt
+                    -2 * einsum([A_new[0].T, XA1B0XB1tT]).trace()
+                    + einsum([B0XB1tA1tA1B0XB1tT, A_new[0].T, A_new[0]]).trace()
+                ) / X.size
             else:
                 rss_new = (
-                    TXXt
-                    - 2 * (X @ A_new[1] @ B0XB1t.T @ A[0].T).trace()
-                    + (B0XB1t @ A_new[1].T @ A_new[1] @ B0XB1t.T @ A[0].T @ A[0]).trace()
-                )
-
+                    # TXXt
+                    -2 * einsum([B0XB1tTA0tX, A_new[1]]).trace()
+                    + einsum([A_new[1].T, A_new[1], B0XB1tTA0tA0B0XB1t]).trace()
+                ) / X.size
             # if we make any improvement, break
             improved = rss_new < rss
             if improved:
@@ -618,11 +638,28 @@ def _pgd_like_update_B_inplace(
     for i, B_i in enumerate(B):
 
         if i == 0:
-            B_grad[i] = einsum([A[0].T, A[0], B0XB1t, A[1].T, A[1], B[1] @ X.T])
-            B_grad[i] -= einsum([A0tXA1, B[1] @ X.T])
+            # temporary variables to save computation
+            A0tXA1B1Xt = einsum([A0tXA1, (X @ B[1].T).T])
+            XB1t = X @ B[1].T
+            A1tA1 = A[1].T @ A[1]
+            B1Xt = (X @ B[1].T).T
+            A0tA0 = einsum([A[0].T, A[0]])
+
+            # gradient computation
+            B_grad[i] = einsum([A0tA0, B[0], XB1t, A1tA1, B1Xt])
+            B_grad[i] -= A0tXA1B1Xt
         else:
-            B_grad[i] = einsum([X.T @ B[0].T, A[0].T, A[0], B0XB1t, A[1].T, A[1]])
-            B_grad[i] -= einsum([X.T @ B[0].T, A0tXA1])
+            # temporary variables to save computation
+
+            XtB0t = X.T @ B[0].T
+            A0tA0 = A[0].T @ A[0]
+            B0X = (X.T @ B[0].T).T
+
+            A1tA1 = einsum([A[1].T, A[1]])
+            XtB0tA0tXA1 = einsum([B0X.T, A0tXA1])
+
+            B_grad[i] = einsum([XtB0t, A0tA0, B0X, B[1].T, A1tA1])
+            B_grad[i] -= einsum([XtB0tA0tXA1])
             B_grad[i] = B_grad[i].T
 
         if pseudo_pgd:
@@ -640,20 +677,16 @@ def _pgd_like_update_B_inplace(
             project(B_new[i])
             if i == 0:
                 rss_new = (
-                    TXXt
-                    - 2 * einsum([A0tXA1, B[1], X.T @ B_new[0].T]).trace()
-                    + einsum(
-                        [B_new[0], X @ B[1].T, A[1].T, A[1], B[1], X.T @ B_new[0].T, A[0].T, A[0]]
-                    ).trace()
-                )
+                    # TXXt
+                    -2 * einsum([A0tXA1B1Xt @ B_new[0].T]).trace()
+                    + einsum([B_new[0], XB1t, A1tA1, B1Xt, B_new[0].T, A0tA0]).trace()
+                ) / X.size
             else:
                 rss_new = (
-                    TXXt
-                    - 2 * einsum([A0tXA1, B_new[1], X.T @ B[0].T]).trace()
-                    + einsum(
-                        [B[0], X @ B_new[1].T, A[1].T, A[1], B_new[1], X.T @ B[0].T, A[0].T, A[0]]
-                    ).trace()
-                )
+                    # TXXt
+                    -2 * einsum([A0tXA1, B_new[1], X.T @ B[0].T]).trace()
+                    + einsum([B_new[1], XtB0t, A0tA0, B0X, B_new[1].T, A1tA1]).trace()
+                ) / X.size
             improved = rss_new < rss
             if improved:
                 step_size_B[i] /= beta
