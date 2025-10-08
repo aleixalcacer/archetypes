@@ -17,6 +17,7 @@
 Like Pseudo-PGD, but performs orthogonal projection onto unit simplex
 
 {cite:p}`condat2016`
+{cite:p}`wang2025`
 
 ### Automatic Gradient Descent
 
