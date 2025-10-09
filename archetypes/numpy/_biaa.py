@@ -360,7 +360,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
     archetypes = einsum([B[0], X @ B[1].T])
 
     rss = (
-        -2 * einsum([A[0].T, X, A[1], archetypes.T]).trace()
+        -2 * einsum([A[0].T, X @ A[1], archetypes.T]).trace()
         + einsum([archetypes, A[1].T, A[1], archetypes.T, A[0].T, A[0]]).trace()
     ) / X.size
 
@@ -375,7 +375,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
         archetypes = einsum([B[0], X, B[1].T])
 
         rss = (
-            -2 * einsum([A[0].T, X, A[1], archetypes.T]).trace()
+            -2 * einsum([A[0].T, X @ A[1], archetypes.T]).trace()
             + einsum([archetypes, A[1].T, A[1], archetypes.T, A[0].T, A[0]]).trace()
         ) / X.size
 
@@ -483,7 +483,7 @@ def _pgd_like_optimize_aa(
 
     rss = (
         # TXXt
-        -2 * einsum([A[0].T, X, A[1], B0XB1t.T]).trace()
+        -2 * einsum([A[0].T, X @ A[1], B0XB1t.T]).trace()
         + einsum([B0XB1t, A[1].T, A[1], B0XB1t.T, A[0].T, A[0]]).trace()
     ) / X.size
 
@@ -558,7 +558,7 @@ def _pgd_like_update_A_inplace(
         # gradient wrt A
         if i == 0:
             # temporary variables to save computation
-            XA1B0XB1tT = einsum([X, A[1], B0XB1t.T])
+            XA1B0XB1tT = einsum([X @ A[1], B0XB1t.T])
             B0XB1tA1tA1B0XB1tT = einsum([B0XB1t, A[1].T, A[1], B0XB1t.T])
 
             # gradient computation
