@@ -1,12 +1,10 @@
 import numpy as np
 
+from ..processing import sort_by_labels
 from ..utils import check_generator_numpy, partial_arch_einsum
-from .permutations import sort_by_labels
 
 
-def make_archetypal_dataset(
-    archetypes, shape, alpha=1.0, noise=0.0, generator=None
-) -> (np.array, list):
+def make_archetypal_dataset(archetypes, shape, alpha=1.0, noise=0.0, generator=None):
     """
     Generate a dataset from archetypes.
 

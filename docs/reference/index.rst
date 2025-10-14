@@ -48,7 +48,7 @@ This section covers the visualization tools provided by the `archetypes` package
 Datasets
 --------
 
-This section introduces dataset-related utilities included in the `archetypes` package. These functions allow you to generate synthetic datasets, manipulate existing data, and organize samples for archetypal analysis. They are useful for benchmarking algorithms, testing new ideas, and preparing data for further exploration.
+This section introduces dataset-related utilities included in the `archetypes` package. These functions allow you to generate synthetic datasets with known archetypal structures, load benchmark datasets, and create controlled experimental scenarios. They are essential for algorithm validation, performance benchmarking, testing new methodological ideas, and educational purposes in archetypal analysis.
 
 .. currentmodule:: archetypes.datasets
 
@@ -58,10 +58,26 @@ This section introduces dataset-related utilities included in the `archetypes` p
    :template: function.rst
 
    make_archetypal_dataset
-   permute_dataset
-   shuffle_dataset
-   sort_by_archetype_similarity
+
+
+Processing
+----------
+
+This section covers data processing and manipulation utilities designed specifically for archetypal analysis workflows. These functions help you organize, sort, and transform your data and analysis results to extract meaningful insights. Use these tools to prepare datasets for analysis, post-process archetypal results, find representative samples, and create ordered visualizations that reveal archetypal patterns and relationships in your data.
+
+.. currentmodule:: archetypes.processing
+
+.. autosummary::
+   :toctree: _autosummary/processing
+   :recursive:
+   :template: function.rst
+
+   permute
+   shuffle
+   sort_by_coefficients
    sort_by_labels
+   get_closest_n
+   get_closest_threshold
 
 
 .. toctree:: _autosummary
