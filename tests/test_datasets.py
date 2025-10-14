@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 
 from archetypes import NAA
-from archetypes.datasets import (
+from archetypes.datasets import make_archetypal_dataset
+from archetypes.processing import (
     get_closest_n,
     get_closest_threshold,
-    make_archetypal_dataset,
     permute,
     shuffle,
     sort_by_coefficients,
