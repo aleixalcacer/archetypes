@@ -1,15 +1,19 @@
 from .make_archetypal_dataset import make_archetypal_dataset
 from .permutations import (
-    permute_dataset,
-    shuffle_dataset,
-    sort_by_archetype_similarity,
+    get_closest_n,
+    get_closest_threshold,
+    permute,
+    shuffle,
+    sort_by_coefficients,
     sort_by_labels,
 )
 
 __all__ = [
     "make_archetypal_dataset",
-    "permute_dataset",
-    "shuffle_dataset",
-    "sort_by_archetype_similarity",
+    "permute",
+    "shuffle",
+    "sort_by_coefficients",
     "sort_by_labels",
+    "get_closest_n",
+    "get_closest_threshold",
 ]
