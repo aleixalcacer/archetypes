@@ -32,6 +32,10 @@ def make_archetypal_dataset(
         The labels for each dimension.
     """
     ndim = len(shape)
+    arch_ndim = archetypes.ndim
+
+    if ndim > arch_ndim:
+        raise ValueError("archetype ndim must be grater than shape length")
 
     n_archetypes = archetypes.shape[:ndim]
 
@@ -66,6 +70,6 @@ def make_archetypal_dataset(
     X += generator.normal(0, noise, size=X.shape)
 
     # Sort the dataset by the labels
-    X, info = sort_by_labels(X, new_labels)
+    X, info, perms = sort_by_labels(X, new_labels)
 
-    return X, info["labels"]
+    return X, labels, perms

@@ -8,7 +8,7 @@ from archetypes.visualization.utils import get_cmap, process_params
 
 
 def simplex(
-    points,
+    data,
     show_axis=True,
     axis_params=None,
     show_vertices=True,
@@ -19,13 +19,13 @@ def simplex(
     **params,
 ):
     """
-    A simplex plot of *points* with multiple optional parameters to obtain a customized
+    A simplex plot of *data* with multiple optional parameters to obtain a customized
     visualization.
 
     Parameters
     ----------
-    points : numpy.ndarray
-        The points to plot.
+    data : numpy.ndarray
+        The data to plot.
     show_axis : bool, optional
         Whether to show the simplex axis, by default True.
     axis_params : dict, optional
@@ -41,14 +41,21 @@ def simplex(
     ax : matplotlib.axes.Axes, optional
         The axes to plot on, by default None. If None, the current axes will be used.
     **params : dict, optional
-        The parameters to pass to the points plot. ax.scatter(..., **params)
+        The parameters to pass to the scatter plot. ax.scatter(..., **params)
     """
     if not ax:
         ax = plt.gca()
 
-    points = np.asarray(points)
-    m = points.shape[1]
-    n = points.shape[0]
+    data = np.asarray(data)
+
+    # Ckeck if data is a simplex
+    if np.any(data < 0):
+        raise ValueError("data must be non-negative")
+    if not np.allclose(data.sum(axis=1), 1):
+        raise ValueError("rows must sum to 1")
+
+    m = data.shape[1]
+    n = data.shape[0]
 
     cmap = get_cmap()
 
@@ -97,7 +104,7 @@ def simplex(
 
     # Project the points to 2D
     points_projected = np.apply_along_axis(
-        lambda x: np.sum(x.reshape(-1, 1) * vertices, 0), 1, points
+        lambda x: np.sum(x.reshape(-1, 1) * vertices, 0), 1, data
     )
 
     # Draw the points
