@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Polygon
 
-from archetypes.datasets import get_closest_n, sort_by_coefficients
+from archetypes.processing import get_closest_n, sort_by_coefficients
 
 
 def heatmap(data, coefficients=None, n=None, ax=None, **kwargs):
