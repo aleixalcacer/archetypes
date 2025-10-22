@@ -6,17 +6,17 @@ import numpy as np
 from ..utils import nnls
 
 
-def uniform(X, k, random_state=None, **kwargs):
+def uniform(X, k, random_state=None, **params):
     # sample all points uniformly at random
     return random_state.choice(X.shape[0], k, replace=False)
 
 
-def uniform_kernel(X, k, kernel, random_state=None, **kwargs):
+def uniform_kernel(X, k, kernel, random_state=None, **params):
     # sample all points uniformly at random
     return random_state.choice(X.shape[0], k, replace=False)
 
 
-def furthest_first(X, k, random_state=None, **kwargs):
+def furthest_first(X, k, random_state=None, **params):
     n = X.shape[0]
     ind = []
 
@@ -37,7 +37,7 @@ def furthest_first(X, k, random_state=None, **kwargs):
     return ind
 
 
-def furthest_sum(X, k, random_state=None, **kwargs):
+def furthest_sum(X, k, random_state=None, **params):
     # Archetypal Analysis for Machine Learning
     # Morten Mørup and Lars Kai Hansen, 2010
 
@@ -77,7 +77,7 @@ def furthest_sum(X, k, random_state=None, **kwargs):
     return ind
 
 
-def furthest_sum_kernel(X, k, kernel, random_state=None, **kwargs):
+def furthest_sum_kernel(X, k, kernel, random_state=None, **params):
     # Archetypal Analysis for Machine Learning
     # Morten Mørup and Lars Kai Hansen, 2010
 
@@ -85,7 +85,7 @@ def furthest_sum_kernel(X, k, kernel, random_state=None, **kwargs):
     ind = []
 
     # compute the (sum) of distances to the chosen point(s)
-    K = kernel(X, X, **kwargs)
+    K = kernel(X, X, **params)
 
     # Convert Gram matrix to distance
     dist = np.sqrt(-2 * K + np.diag(K)[:, None] + np.diag(K)[None, :])
@@ -120,7 +120,7 @@ def furthest_sum_kernel(X, k, kernel, random_state=None, **kwargs):
     return ind
 
 
-def coreset(X, k, random_state=None, **kwargs):
+def coreset(X, k, random_state=None, **params):
     # Coresets for Archetypal Analysis
     # Mair and Brefeld, 2019
     n = X.shape[0]
@@ -130,8 +130,8 @@ def coreset(X, k, random_state=None, **kwargs):
     return ind
 
 
-def aa_plus_plus(X, k, random_state=None, kwargs=None):
-    const = kwargs.get("const", 1_000)
+def aa_plus_plus(X, k, random_state=None, params=None):
+    const = params.get("const", 1_000)
 
     n = X.shape[0]
     ind = []

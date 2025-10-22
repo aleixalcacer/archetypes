@@ -9,7 +9,7 @@ from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
 
 
 @pytest.mark.parametrize(
-    "method,method_kwargs",
+    "method,method_params",
     [
         ("nnls", None),
         ("nnls", {"max_iter_optimizer": 100, "const": 10}),
@@ -20,7 +20,7 @@ from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
     ],
 )
 @pytest.mark.parametrize("data_format", ["dense", "sparse"])
-def test_AA(method, method_kwargs, data_format):
+def test_AA(method, method_params, data_format):
     shape = (100, 2)
     data = np.random.uniform(size=(shape))
 
@@ -30,10 +30,10 @@ def test_AA(method, method_kwargs, data_format):
         data = csr_matrix(data)
 
     n_archetypes = 4
-    model = AA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = AA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     trans_data = model.fit_transform(data)
 
-    model = AA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = AA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     model = model.fit(data)
     trans_data = model.transform(data)
 
@@ -43,7 +43,7 @@ def test_AA(method, method_kwargs, data_format):
 
 
 @pytest.mark.parametrize(
-    "method,method_kwargs",
+    "method,method_params",
     [
         ("nnls", None),
         ("nnls", {"max_iter_optimizer": 100, "const": 10}),
@@ -54,7 +54,7 @@ def test_AA(method, method_kwargs, data_format):
     ],
 )
 @pytest.mark.parametrize("data_format", ["dense", "sparse"])
-def test_BiAA(method, method_kwargs, data_format):
+def test_BiAA(method, method_params, data_format):
     shape = (100, 100)
     data = np.random.uniform(size=(shape))
 
@@ -64,10 +64,10 @@ def test_BiAA(method, method_kwargs, data_format):
         data = csr_matrix(data)
 
     n_archetypes = (5, 4)
-    model = BiAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = BiAA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     trans_data = model.fit_transform(data)
 
-    model = BiAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = BiAA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     model = model.fit(data)
 
     for i in range(len(n_archetypes)):
@@ -77,7 +77,7 @@ def test_BiAA(method, method_kwargs, data_format):
 
 
 @pytest.mark.parametrize(
-    "method,method_kwargs",
+    "method,method_params",
     [
         ("pgd", None),
         ("pgd", {"max_iter_optimizer": 20, "beta": 0.8}),
@@ -92,15 +92,15 @@ def test_BiAA(method, method_kwargs, data_format):
         ((10, 8, 6), (2, 3, 2)),
     ],
 )
-def test_NAA(method, method_kwargs, shape, n_archetypes):
+def test_NAA(method, method_params, shape, n_archetypes):
     from archetypes import NAA
 
     data = np.random.uniform(size=(shape))
 
-    model = NAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = NAA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     trans_data = model.fit_transform(data)
 
-    model = NAA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = NAA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     model = model.fit(data)
 
     for i in range(len(n_archetypes)):
@@ -119,21 +119,21 @@ def test_projection(proj_func):
 
 
 @pytest.mark.parametrize(
-    "method,method_kwargs",
+    "method,method_params",
     [
         ("nnls", None),
         ("nnls", {"max_iter_optimizer": 100, "const": 10}),
     ],
 )
-def test_ADA(method, method_kwargs):
+def test_ADA(method, method_params):
     shape = (100, 2)
     data = np.random.uniform(size=(shape))
 
     n_archetypes = 4
-    model = ADA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = ADA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     trans_data = model.fit_transform(data)
 
-    model = ADA(n_archetypes=n_archetypes, method=method, method_kwargs=method_kwargs)
+    model = ADA(n_archetypes=n_archetypes, method=method, method_params=method_params)
     model = model.fit(data)
     trans_data = model.transform(data)
 
