@@ -34,14 +34,14 @@ class BiAA(TransformerMixin, BaseEstimator):
     n_init : int, default=1
         Number of time the archetype analysis algorithm will be run with different
         initializations. The final results will be the best output of n_init consecutive runs.
-    init_kwargs : dict, default=None
+    init_params : dict, default=None
         Additional keyword arguments to pass to the initialization method.
     save_init : bool, default=False
         If True, save the initial archetypes in the attribute `archetypes_init_`,
     method: str, default='pgd'
         The optimization method to use for the archetypes and the coefficients,
         must be one of the following: 'nnls, pgd, pseudo_pgd'. See :ref:`optimization-methods`.
-    method_kwargs : dict, default=None
+    method_params : dict, default=None
         Additional arguments to pass to the optimization method. See :ref:`optimization-methods`.
     verbose : bool, default=False
         Verbosity mode.
@@ -81,7 +81,7 @@ class BiAA(TransformerMixin, BaseEstimator):
             StrOptions({"uniform", "furthest_sum", "furthest_first", "coreset", "aa_plus_plus"}),
             None,
         ],
-        "init_kwargs": [dict, None],
+        "init_params": [dict, None],
         "save_init": [bool],
         "method": [
             StrOptions(
@@ -92,7 +92,7 @@ class BiAA(TransformerMixin, BaseEstimator):
                 }
             )
         ],
-        "method_kwargs": [dict, None],
+        "method_params": [dict, None],
         "random_state": ["random_state"],
         "verbose": ["verbose"],
     }
@@ -105,10 +105,10 @@ class BiAA(TransformerMixin, BaseEstimator):
         tol=1e-4,
         init="uniform",
         n_init=1,
-        init_kwargs=None,
+        init_params=None,
         save_init=False,
         method="pgd",
-        method_kwargs=None,
+        method_params=None,
         verbose=False,
         random_state=None,
     ):
@@ -117,10 +117,10 @@ class BiAA(TransformerMixin, BaseEstimator):
         self.tol = tol
         self.init = init
         self.n_init = n_init
-        self.init_kwargs = init_kwargs
+        self.init_params = init_params
         self.save_init = save_init
         self.method = method
-        self.method_kwargs = method_kwargs
+        self.method_params = method_params
         self.verbose = verbose
         self.random_state = random_state
 
@@ -147,15 +147,15 @@ class BiAA(TransformerMixin, BaseEstimator):
         elif self.init == "aa_plus_plus":
             init_archetype_func = aa_plus_plus
 
-        init_kwargs = {} if self.init_kwargs is None else self.init_kwargs
+        init_params = {} if self.init_params is None else self.init_params
 
         B_0 = np.zeros((self.n_archetypes[0], n_samples_0), dtype=X.dtype)
-        ind0 = init_archetype_func(X, self.n_archetypes[0], random_state=rng, **init_kwargs)
+        ind0 = init_archetype_func(X, self.n_archetypes[0], random_state=rng, **init_params)
         for i, j in enumerate(ind0):
             B_0[i, j] = 1
 
         B_1 = np.zeros((self.n_archetypes[1], n_samples_1), dtype=X.dtype)
-        ind1 = init_archetype_func(X.T, self.n_archetypes[1], random_state=rng, **init_kwargs)
+        ind1 = init_archetype_func(X.T, self.n_archetypes[1], random_state=rng, **init_params)
         for i, j in enumerate(ind1):
             B_1[i, j] = 1
 
@@ -279,7 +279,7 @@ class BiAA(TransformerMixin, BaseEstimator):
             elif self.method == "pseudo_pgd":
                 fit_transform_func = pseudo_pgd_fit_transform
 
-            method_kwargs = {} if self.method_kwargs is None else self.method_kwargs
+            method_params = {} if self.method_params is None else self.method_params
 
             rng = check_random_state(self.random_state)
 
@@ -299,7 +299,7 @@ class BiAA(TransformerMixin, BaseEstimator):
                     max_iter=self.max_iter,
                     tol=self.tol,
                     verbose=self.verbose,
-                    **method_kwargs,
+                    **method_params,
                 )
 
                 rss = loss[-1]
@@ -329,33 +329,33 @@ class BiAA(TransformerMixin, BaseEstimator):
         return self.A_
 
 
-def nnls_transform_A(X, archetypes, A, **kwargs):
+def nnls_transform_A(X, archetypes, A, **params):
     # AX = B
     B = X
     A_0 = archetypes @ A[1].T
-    X_0 = nnls(B, A_0, **kwargs)
+    X_0 = nnls(B, A_0, **params)
 
     A_1 = A[0] @ archetypes
-    X_1 = nnls(B.T, A_1.T, **kwargs)
+    X_1 = nnls(B.T, A_1.T, **params)
 
     return [X_0, X_1]
 
 
-def nnls_transform_B(X, A, B, **kwargs):
+def nnls_transform_B(X, A, B, **params):
     # AX = B
     B_0 = np.linalg.pinv(A[0]) @ X
 
     A_0 = einsum([X, B[1].T, A[1].T])
-    X_0 = nnls(B_0, A_0, **kwargs)
+    X_0 = nnls(B_0, A_0, **params)
 
     B_1 = X @ np.linalg.pinv(A[1].T)
     A_1 = einsum([A[0], X_0, X])
-    X_1 = nnls(B_1.T, A_1.T, **kwargs)
+    X_1 = nnls(B_1.T, A_1.T, **params)
 
     return [X_0, X_1]
 
 
-def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
+def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **params):
 
     archetypes = einsum([B[0], X @ B[1].T])
 
@@ -370,8 +370,8 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
 
     for i in range(1, max_iter + 1):
 
-        A = nnls_transform_A(X, archetypes, A, **kwargs)
-        B = nnls_transform_B(X, A, B, **kwargs)
+        A = nnls_transform_A(X, archetypes, A, **params)
+        B = nnls_transform_B(X, A, B, **params)
         archetypes = einsum([B[0], X, B[1].T])
 
         rss = (
@@ -389,7 +389,7 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs)
     return A, B, archetypes, i, loss_list, convergence
 
 
-def pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
+def pgd_transform(X, archetypes, *, max_iter, tol, **params):
     A = X @ np.linalg.pinv(archetypes)
     unit_simplex_proj(A)
     A, _, _, _, _, _ = _pgd_like_optimize_aa(
@@ -402,12 +402,12 @@ def pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
         verbose=False,
         pseudo_pgd=False,
         update_B=False,
-        **kwargs,
+        **params,
     )
     return A
 
 
-def pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
+def pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **params):
     return _pgd_like_optimize_aa(
         X,
         A,
@@ -418,11 +418,11 @@ def pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
         verbose=verbose,
         pseudo_pgd=False,
         update_B=True,
-        **kwargs,
+        **params,
     )
 
 
-def pseudo_pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
+def pseudo_pgd_transform(X, archetypes, *, max_iter, tol, **params):
     A = X @ np.linalg.pinv(archetypes)
     l1_normalize_proj(A)
     A, _, _, _, _, _ = _pgd_like_optimize_aa(
@@ -435,12 +435,12 @@ def pseudo_pgd_transform(X, archetypes, *, max_iter, tol, **kwargs):
         verbose=False,
         pseudo_pgd=True,
         update_B=False,
-        **kwargs,
+        **params,
     )
     return A
 
 
-def pseudo_pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **kwargs):
+def pseudo_pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **params):
     return _pgd_like_optimize_aa(
         X,
         A,
@@ -451,7 +451,7 @@ def pseudo_pgd_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **k
         verbose=verbose,
         pseudo_pgd=True,
         update_B=True,
-        **kwargs,
+        **params,
     )
 
 
@@ -469,7 +469,7 @@ def _pgd_like_optimize_aa(
     step_size=1.0,
     max_iter_optimizer=10,
     beta=0.5,
-    **kwargs,
+    **params,
 ):
 
     A_grad = [np.empty_like(A[0]), np.empty_like(A[1])]
