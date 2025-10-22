@@ -43,6 +43,7 @@ This section covers the visualization tools provided by the `archetypes` package
 
    simplex
    stacked_bar
+   heatmap
 
 
 Datasets
