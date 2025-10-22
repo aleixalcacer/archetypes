@@ -3,20 +3,26 @@ import numpy as np
 from ._sort import sort_by_coefficients
 
 
-def get_closest_n(data, coefficients, n=10):
+def get_closest_n(data, coefficients, n=10, reorder=False):
     """
     Return the n samples closest to each archetype based on their coefficients.
 
     Parameters
     ----------
-    data : array-like of shape (n_samples, n_features)
+    data : array-like of shape
         Input dataset containing all samples.
     coefficients: list of array-like
         List of coefficient matrices where each column represents the contribution of an archetype
         to a given sample. Samples with higher coefficients for an archetype are considered
         closer to that archetype.
-    n : int, default=10
+    n : int, tuple, default=10
         Number of the closest samples to return for each archetype.
+        if tuple, it should be of the same length as the number of coefficient matrices.
+        Default is 10 for all archetypes in all dimensions.
+
+    reorder : bool, optional
+        Whether to reorder the archetypal groups by size.
+        Default is False.
 
     Returns
     -------
@@ -28,15 +34,19 @@ def get_closest_n(data, coefficients, n=10):
         A list of the corresponding permutations for the returned samples.
     """
 
-    data, coefficients, perms = sort_by_coefficients(data, coefficients)
+    data, coefficients, perms = sort_by_coefficients(data, coefficients, reorder=reorder)
     labels = [np.argmax(c, axis=1) for c in coefficients]
+    if isinstance(n, int):
+        n = [n] * len(coefficients)
+    elif len(n) != len(coefficients):
+        raise ValueError("n should be an int or a tuple of the same length as coefficients")
 
     idx = []
-    for labels_i in labels:
+    for i, labels_i in enumerate(labels):
         # Get the id of the first n occurrences of each label
         idx_i = []
         for label in set(labels_i):
-            idx_i.extend(np.where(labels_i == label)[0][:n])
+            idx_i.extend(np.where(labels_i == label)[0][: n[i]])
 
         idx_i = np.array(idx_i)
         if len(idx_i) == 0:
@@ -56,7 +66,7 @@ def get_closest_n(data, coefficients, n=10):
     return data, coefficients, perms
 
 
-def get_closest_threshold(data, coefficients, threshold=0.9):
+def get_closest_threshold(data, coefficients, threshold=0.9, reorder=False):
     """
     Return the samples closest to each archetype based on their coefficients.
 
@@ -68,8 +78,11 @@ def get_closest_threshold(data, coefficients, threshold=0.9):
         List of coefficient matrices where each column represents the contribution of an archetype
         to a given sample. Samples with higher coefficients for an archetype are considered
         closer to that archetype.
-    threshold : float, default=0.9
+    threshold : float, tuple, default=0.9
         Minimum coefficient value for a sample to be considered close to an archetype.
+    reorder : bool, optional
+        Whether to reorder the archetypal groups by size.
+        Default is False.
 
     Returns
     -------
@@ -81,16 +94,21 @@ def get_closest_threshold(data, coefficients, threshold=0.9):
         A list of the corresponding permutations for the returned samples.
     """
 
-    data, coefficients, perms = sort_by_coefficients(data, coefficients)
+    data, coefficients, perms = sort_by_coefficients(data, coefficients, reorder=reorder)
     labels = [np.argmax(c, axis=1) for c in coefficients]
+    if isinstance(threshold, (int, float)):
+        threshold = [threshold] * len(coefficients)
+    elif len(threshold) != len(coefficients):
+        raise ValueError(
+            "threshold should be a float or a tuple of the same length as coefficients"
+        )
 
     idx = []
-    for labels_i, coeffs_i in zip(labels, coefficients):
+    for i, (labels_i, coeffs_i) in enumerate(zip(labels, coefficients)):
         # Get the id of the occurrences of each label with coefficient above threshold
         idx_i = []
         for label in set(labels_i):
-            c = np.where((labels_i == label) & (coeffs_i[:, label] >= threshold))[0]
-            print(c)
+            c = np.where((labels_i == label) & (coeffs_i[:, label] >= threshold[i]))[0]
             idx_i.extend(c)
         idx_i = np.array(idx_i)
 

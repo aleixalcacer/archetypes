@@ -5,7 +5,7 @@ from matplotlib.patches import Polygon
 from archetypes.processing import get_closest_n, sort_by_coefficients
 
 
-def heatmap(data, coefficients=None, n=None, ax=None, **kwargs):
+def heatmap(data, coefficients=None, n=None, reorder=False, ax=None, **kwargs):
     """
     Plot a heatmap of the data.
 
@@ -20,6 +20,9 @@ def heatmap(data, coefficients=None, n=None, ax=None, **kwargs):
     n: int or None, default=None
         If provided, only the n closest samples to each archetype are shown. Requires
         coefficients to be provided. If None, all samples are shown.
+    reorder: bool, optional
+        Whether to reorder the archetypal groups by size.
+        Default is False.
     ax: matplotlib.pyplot.axes or None
         The axes to plot on. If None, a new figure and axes is created.
     **params : dict, optional
@@ -30,7 +33,7 @@ def heatmap(data, coefficients=None, n=None, ax=None, **kwargs):
         The axes.
     """
     if coefficients:
-        data, coefficients, perms = sort_by_coefficients(data, coefficients)
+        data, coefficients, perms = sort_by_coefficients(data, coefficients, reorder=reorder)
         if n:
             # Check n is a positive integer
             if not isinstance(n, int):
@@ -60,6 +63,8 @@ def heatmap(data, coefficients=None, n=None, ax=None, **kwargs):
 
     if "cmap" not in kwargs:
         kwargs["cmap"] = "Greys"
+    if "aspect" not in kwargs:
+        kwargs["aspect"] = "auto"
 
     if labels is not None:
         # check labels is a list of 2 arrays
@@ -106,7 +111,7 @@ def heatmap(data, coefficients=None, n=None, ax=None, **kwargs):
 
     ax.matshow(data, interpolation="none", **kwargs)
 
-    ax.set_aspect("auto")
+    # ax.set_aspect("auto")
 
     ax.set_xticks([])
     ax.set_yticks([])
