@@ -33,7 +33,8 @@ classifiers = [
 dependencies = [
     "numpy>=1.25",
     "scikit-learn>=1.6",
-    "scipy>=1.16",  # nnls issue, it will be fixed in 1.15
+    "scipy>=1.8,<1.12; python_version < '3.11'",
+    "scipy>=1.16; python_version >= '3.11'",
     "matplotlib>=3.8",
     "opt_einsum",
     "pykronecker",
