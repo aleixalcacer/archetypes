@@ -6,6 +6,7 @@ from archetypes.numpy import (
     FairAA,
     FairKernelAA,
     KernelAA,
+    KernelADA,
     SymmetricBiAA,
 )
 
@@ -14,6 +15,7 @@ __all__ = [
     "BiAA",
     "NAA",
     "ADA",
+    "KernelADA",
     "SymmetricBiAA",
     "FairAA",
     "KernelAA",

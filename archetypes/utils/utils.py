@@ -89,20 +89,19 @@ def pmc(X, B, **kwargs):
     n_archetypes = B.shape[0]
     A = nnls(X, archetypes, **kwargs)
     rss = squared_norm(X - A @ archetypes)
-    combination = None
+
     for k in range(n_archetypes):
-        if k != 0:
-            archetypes[k - 1] = X[archetypes_index[k - 1]]
         for i in range(X.shape[0]):
-            archetypes[k] = X[i]
+            if i in archetypes_index:
+                continue
+            archetypes_index_new = archetypes_index.copy()
+            archetypes_index_new[k] = i
+            archetypes = X[archetypes_index_new]
             A = nnls(X, archetypes, **kwargs)
             rss_i = squared_norm(X - A @ archetypes)
             if rss_i < rss:
                 rss = rss_i
-                combination = {"k": k, "i": i}
-
-    if combination:
-        archetypes_index[combination["k"]] = combination["i"]
+                archetypes_index = archetypes_index_new.copy()
 
     B = np.zeros((n_archetypes, X.shape[0]))
     B[np.arange(n_archetypes), archetypes_index] = 1
