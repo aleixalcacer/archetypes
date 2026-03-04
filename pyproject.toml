@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling", "setuptools", "numpy>=2.0", "Cython>=3.0"]
-build-backend = "hatchling.build"
+requires = ["scikit-build-core>=0.10", "numpy>=2.0", "Cython>=3.0"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "archetypes"
@@ -52,18 +52,8 @@ dev = [
     "jupyter",
 ]
 
-[tool.hatch.build.hooks.cython]
-dependencies = ["hatch-cython"]
-
-[tool.hatch.build.hooks.cython.options]
-src = "archetypes"
-directives = { boundscheck = false, wraparound = false, nonecheck = false, cdivision = true, language_level = 3, binding = true }
-
-[tool.hatch.build.hooks.cython.options.files]
-exclude = ["*.py$"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["archetypes"]
+[tool.scikit-build]
+wheel.packages = ["archetypes"]
 
 [tool.isort]
 profile = "black"
