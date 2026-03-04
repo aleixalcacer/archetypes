@@ -1,3 +1,5 @@
+from importlib.metadata import version
+
 from archetypes.numpy import (
     AA,
     ADA,
@@ -20,4 +22,4 @@ __all__ = [
     "FairKernelAA",
 ]
 
-__version__ = "0.11.1"
+__version__ = version("archetypes")

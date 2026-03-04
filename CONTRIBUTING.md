@@ -57,6 +57,14 @@ propose the feature you’d like to add.
 Then create a new, separate branch for each piece of work you want to do.
 
 
+### Set up your development environment
+
+Install dependencies with `uv`:
+
+```bash
+uv sync --group dev
+```
+
 ### Update docstrings
 
 If you've changed APIs, update the involved docstrings.
@@ -66,3 +74,9 @@ If you've changed APIs, update the involved docstrings.
 
 If you have added code that needs to be tested, add the necessary tests and
 verify that all tests pass successfully.
+
+```bash
+uv build
+uv run pytest tests
+uv run pre-commit run --all-files
+```
