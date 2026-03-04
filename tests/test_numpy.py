@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
+from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
 from scipy.sparse import csr_matrix
 
 from archetypes import AA, ADA, BiAA
-from archetypes.numpy._projection import l1_normalize_proj, unit_simplex_proj
 
 # create a test using pytest
 

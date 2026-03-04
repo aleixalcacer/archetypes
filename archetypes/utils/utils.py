@@ -126,9 +126,9 @@ def generate_loss(X, A, B):
 
     # cuerpo de la nueva función en string
     func_code = f"""
-def loss({', '.join(params)}):
-    A = [{', '.join(params_A)}]
-    B = [{', '.join(params_B)}]
+def loss({", ".join(params)}):
+    A = [{", ".join(params_A)}]
+    B = [{", ".join(params_B)}]
 
     return squared_norm(X - arch_einsum(A, arch_einsum(B, X)))
 """
