@@ -606,7 +606,6 @@ def _pgd_like_update_B_inplace(
         step_size_B *= beta
 
     if improved:
-
         np.copyto(B, B_new)
         np.copyto(BX, B @ X)
         np.copyto(XXtBt, X @ BX.T)

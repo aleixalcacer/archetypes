@@ -236,7 +236,6 @@ class NAA(TransformerMixin, BaseEstimator):
         X = np.ascontiguousarray(X)
 
         if self.n_archetypes == (1, 1):
-
             archetypes_ = np.mean(X, keepdims=True)
 
             B_ = [

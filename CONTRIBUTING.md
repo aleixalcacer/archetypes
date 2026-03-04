@@ -78,5 +78,7 @@ verify that all tests pass successfully.
 ```bash
 uv build
 uv run pytest tests
+uv run ruff check --fix
+uv run ruff format
 uv run pre-commit run --all-files
 ```

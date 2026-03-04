@@ -369,7 +369,6 @@ def nnls_fit_transform(X, A, B, archetypes, *, max_iter, tol, verbose, **params)
     ]
 
     for i in range(1, max_iter + 1):
-
         A = nnls_transform_A(X, archetypes, A, **params)
         B = nnls_transform_B(X, A, B, **params)
         archetypes = einsum([B[0], X, B[1].T])
@@ -636,7 +635,6 @@ def _pgd_like_update_B_inplace(
 ):
 
     for i, B_i in enumerate(B):
-
         if i == 0:
             # temporary variables to save computation
             A0tXA1B1Xt = einsum([A0tXA1, (X @ B[1].T).T])
