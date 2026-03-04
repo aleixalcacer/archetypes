@@ -44,22 +44,16 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit",
-    "flake8",
+    "ruff",
     "pytest",
-    "black[jupyter]",
-    "isort",
-    "pylint",
     "jupyter",
 ]
 
 [tool.scikit-build]
 wheel.packages = ["archetypes"]
 
-[tool.isort]
-profile = "black"
-
-[tool.pylint.format]
-max-line-length = "100"
-
-[tool.black]
+[tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
