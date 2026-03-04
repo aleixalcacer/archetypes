@@ -93,7 +93,6 @@ def circular_bar(
         if show_labels:
             # Iterate over angles, values, and labels, to add all of them.
             for angle, height, label in zip(angles, heights, labels):
-
                 # Labels are rotated. Rotation must be specified in degrees :(
                 rotation = np.rad2deg(angle)
 
