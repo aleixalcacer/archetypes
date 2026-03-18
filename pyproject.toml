@@ -58,6 +58,7 @@ docs = [
     "scikit-learn",
     "matplotlib",
     "numpy",
+    "networkx",
 ]
 
 [tool.scikit-build]
