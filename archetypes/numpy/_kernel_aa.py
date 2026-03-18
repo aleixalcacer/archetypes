@@ -11,10 +11,14 @@ from sklearn.metrics.pairwise import (
 from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import squared_norm
-from sklearn.utils.validation import check_is_fitted, validate_data
+from sklearn.utils.validation import validate_data
 
 from ._inits import furthest_sum_kernel, uniform_kernel
 from ._projection import l1_normalize_proj, unit_simplex_proj
+
+
+def precomputed_kernel(X, X2):
+    return X
 
 
 class KernelAA(TransformerMixin, BaseEstimator):
@@ -30,7 +34,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
         The number of archetypes to compute.
     kernel : str, default=’rbf’
         The kernel to use for the archetype analysis, must be one of
-        the following: 'linear', 'poly', 'rbf', 'sigmoid'.
+        the following: 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'.
     kernel_params : dict, default=None
         Additional keyword arguments to pass to the kernel function.
     max_iter : int, default=300
@@ -93,7 +97,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
             # StrOptions({"auto"}),
         ],
         "kernel": [
-            StrOptions({"linear", "poly", "rbf", "sigmoid"}),
+            StrOptions({"linear", "poly", "rbf", "sigmoid", "precomputed"}),
             None,
         ],
         "kernel_params": [dict, None],
@@ -123,7 +127,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
         n_init=1,
         init_params=None,
         save_init=False,
-        method="nnls",
+        method="pgd",
         method_params=None,
         verbose=False,
         random_state=None,
@@ -215,55 +219,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
         A : ndarray of shape (n_samples, n_archetypes)
             X transformed in the new space.
         """
-        check_is_fitted(self)
-        X = validate_data(self, X, dtype=[np.float64, np.float32], reset=False)
-        X = np.ascontiguousarray(X)
-        archetypes = self.archetypes_
-
-        if self.n_archetypes_ == 1:
-            n_samples = X.shape[0]
-            return np.ones((n_samples, self.n_archetypes_), dtype=X.dtype)
-
-        kernel_params = {} if self.kernel_params is None else self.kernel_params
-
-        # To avoid confusions, the X to transform will be renamed to W.
-        if self.kernel == "linear":
-            ZWWt = linear_kernel(X, **kernel_params)
-            ZWXt = linear_kernel(X, self.X_, **kernel_params)
-            ZXXtt = linear_kernel(self.X_, self.X_, **kernel_params)
-        elif self.kernel == "poly":
-            ZWWt = polynomial_kernel(X, **kernel_params)
-            ZWXt = polynomial_kernel(X, self.X_, **kernel_params)
-            ZXXtt = polynomial_kernel(self.X_, self.X_, **kernel_params)
-        elif self.kernel == "rbf":
-            ZWWt = rbf_kernel(X, **kernel_params)
-            ZWXt = rbf_kernel(X, self.X_, **kernel_params)
-            ZXXtt = rbf_kernel(self.X_, self.X_, **kernel_params)
-        elif self.kernel == "sigmoid":
-            ZWWt = sigmoid_kernel(X, **kernel_params)
-            ZWXt = sigmoid_kernel(X, self.X_, **kernel_params)
-            ZXXtt = sigmoid_kernel(self.X_, self.X_, **kernel_params)
-        else:
-            raise ValueError(f"Unknown kernel: {self.kernel}")
-
-        if self.method == "pgd":
-            transform_func = pgd_transform
-        elif self.method == "pseudo_pgd":
-            transform_func = pseudo_pgd_transform
-
-        method_params = {} if self.method_params is None else self.method_params
-        A = transform_func(
-            X,
-            self.B_,
-            archetypes,
-            ZWWt,
-            ZWXt,
-            ZXXtt,
-            max_iter=self.max_iter,
-            tol=self.tol,
-            **method_params,
-        )
-        return A
+        raise NotImplementedError("Transform method is not implemented yet for KernelAA.")
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit_transform(self, X, y=None):
@@ -319,6 +275,8 @@ class KernelAA(TransformerMixin, BaseEstimator):
                 ZWWt = rbf_kernel(X)
             elif self.kernel == "sigmoid":
                 ZWWt = sigmoid_kernel(X)
+            elif self.kernel == "precomputed":
+                ZWWt = X
             else:
                 raise ValueError(f"Unknown kernel: {self.kernel}")
 

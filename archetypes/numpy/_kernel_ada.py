@@ -186,7 +186,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
 
         return A, B, archetypes
 
-    def fit(self, X, y=None, **params):
+    def fit(self, X, y=None, weights=None, **params):
         """
         Compute Archetype Analysis.
 
@@ -198,13 +198,15 @@ class KernelADA(TransformerMixin, BaseEstimator):
             which will cause a memory copy if the given data is not C-contiguous.
         y : Ignored
             Not used, present here for API consistency by convention.
+        weights: np.ndarray, default=None
+            Sample weights.
 
         Returns
         -------
         self : object
             Fitted estimator.
         """
-        self.fit_transform(X, y, **params)
+        self.fit_transform(X, y, weights, **params)
         return self
 
     def transform(self, X):
@@ -227,7 +229,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
         raise NotImplementedError("Transform method is not implemented yet.")
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y=None, weights=None, **params):
         """
         Compute the archetypes and transform X to the archetypal space.
 
@@ -248,6 +250,15 @@ class KernelADA(TransformerMixin, BaseEstimator):
         X = validate_data(self, X, dtype=[np.float64, np.float32])
         self._check_params_vs_data(X)
         X = np.ascontiguousarray(X)
+
+        if weights is not None:
+            weights = np.asarray(weights)
+            if weights.ndim != 1 or weights.shape[0] != X.shape[0]:
+                raise ValueError(
+                    f"Weights must be a 1D array of shape (n_samples,), got {weights.shape}."
+                )
+        else:
+            weights = np.ones(X.shape[0], dtype=X.dtype)
 
         if self.n_archetypes == 1:
             n_samples = X.shape[0]
@@ -291,6 +302,8 @@ class KernelADA(TransformerMixin, BaseEstimator):
 
             ZXXt = ZXXt.copy()
 
+            W = np.diag(weights)
+
             best_rss = np.inf
             for i in range(self.n_init):
                 A, B, _ = self._init_archetypes(X, rng)
@@ -303,7 +316,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
                     X,
                     A,
                     B,
-                    None,
+                    W,
                     ZXXt,
                     ZXXt,
                     max_iter=self.max_iter,
@@ -339,14 +352,12 @@ class KernelADA(TransformerMixin, BaseEstimator):
         return self.A_
 
 
-def pgd_fit_transform(
-    X, A, B, archetypes, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params
-):
+def pgd_fit_transform(X, A, B, W, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
-        archetypes,
+        W,
         ZWXt,
         ZXXt,
         max_iter=max_iter,
@@ -360,13 +371,13 @@ def pgd_fit_transform(
 
 
 def pseudo_pgd_fit_transform(
-    X, A, B, archetypes, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params
+    X, A, B, W, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params
 ):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
-        archetypes,
+        W,
         ZWXt,
         ZXXt,
         max_iter=max_iter,
@@ -383,7 +394,7 @@ def _pgd_like_optimize_aa(
     X,
     A,
     B,
-    archetypes,
+    W,
     ZWXt,  # precomputed kernel between W (data to fit) and X (used to compute the archetypes)
     ZXXt,  # precomputed kernel between X and X
     *,
@@ -406,8 +417,8 @@ def _pgd_like_optimize_aa(
     # precomputing and memory allocation
     # BX = archetypes
 
-    BXWt = B @ ZWXt.T
-    BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T])
+    BXWt = B @ W @ ZWXt.T
+    BXXtBt = np.linalg.multi_dot([B, W, ZXXt, W.T, B.T])
 
     # Temporary arrays for updates
     A_grad = np.empty_like(A)
@@ -450,12 +461,11 @@ def _pgd_like_optimize_aa(
 
             # Define the batches
             B_batch = B[:, idx]
-            ZWXt_batch = ZWXt[:, idx]
-            ZXXt_batch = ZXXt[np.ix_(idx, idx)]
+            ZWXt_batch = (ZWXt @ W)[:, idx]
+            ZXXt_batch = (W @ ZXXt @ W.T)[np.ix_(idx, idx)]
 
             # Get the idx of archetypes in the batch
             archetypes_idx_best_batch = B_batch.argmax(axis=1)
-
             # Check all possible archetype updates in the batch
             for k in range(n_archetypes):
                 archetypes_idx_batch = archetypes_idx_best_batch.copy()
@@ -516,7 +526,113 @@ def _pgd_like_optimize_aa(
         if convergence:
             break
 
-    return A, B, archetypes, i, loss_list, convergence
+        # Post processing, if weights are given
+        archetypes_idx_best = np.argmax(B, axis=1)
+        n_archetypes = B.shape[0]
+
+        ZZt = (B @ W @ ZXXt @ W.T @ B.T).copy()
+
+        rss_post = -2 * np.sum(BXXtBt * (ZZt)) + np.sum(BXXtBt * BXXtBt)  # initial rss
+
+        for i in range(1, max_iter + 1):  # main loop over iterations
+            r = 0
+            while r < B.shape[1]:
+                # Define the batch indexes, ensuring archetypes are included
+                r_max = min(r + batch_size, B.shape[1])
+                idx = np.arange(r, r_max)
+
+                # Ensure all archetypes are included in the batch, but keeping batch size
+                missing_archetypes = np.setdiff1d(archetypes_idx_best, idx)
+                n_missing = len(missing_archetypes)
+
+                # Get idx without archetypes indexes
+                idx_wo_archetypes = np.setdiff1d(idx, archetypes_idx_best)
+
+                idx = idx_wo_archetypes[: (batch_size - n_archetypes)]
+                idx = np.concatenate([idx, archetypes_idx_best])
+                r += batch_size - n_missing
+
+                idx_batch = np.arange(len(idx))
+
+                # Define the batches
+                B_batch = B[:, idx]
+                ZWXt_batch = (ZWXt)[:, idx]
+                ZXXt_batch = (ZXXt)[np.ix_(idx, idx)]
+
+                # Get the idx of archetypes in the batch
+                archetypes_idx_best_batch = B_batch.argmax(axis=1)
+                # Check all possible archetype updates in the batch
+                for k in range(n_archetypes):
+                    archetypes_idx_batch = archetypes_idx_best_batch.copy()
+                    for i in idx_batch:
+                        if i in archetypes_idx_best_batch:
+                            continue
+                        archetypes_idx_batch[k] = i
+
+                        B_batch_new = np.zeros_like(B_batch)
+                        B_batch_new[np.arange(B_batch.shape[0]), archetypes_idx_batch] = 1
+
+                        BXWt_batch_new = B_batch_new @ ZWXt_batch.T
+                        WXtBt_batch_new = ZWXt_batch @ B_batch_new.T
+                        BXXtBt_batch_new = np.linalg.multi_dot(
+                            [B_batch_new, ZXXt_batch, B_batch_new.T]
+                        )
+
+                        rss_batch = -2 * np.sum(BXXtBt_batch_new * (ZZt)) + np.sum(
+                            BXXtBt_batch_new * BXXtBt_batch_new
+                        )
+
+                        if rss_batch < rss_post:
+                            rss_post = rss_batch
+                            archetypes_idx_best_batch = archetypes_idx_batch.copy()
+                            archetypes_idx_best = idx[archetypes_idx_best_batch]
+
+                            B[:] = 0
+                            B[np.arange(B.shape[0]), archetypes_idx_best] = 1
+
+                            np.copyto(A, A_copy)
+
+            convergence = abs(loss_list[-1] - rss_post) < tol
+            # loss_list.append(rss_post)
+            if verbose and i % 10 == 0:
+                verbose_print_rss(max_iter, rss_post, i)
+            if convergence:
+                break
+
+        # Recompute A
+        rss_batch = np.inf
+
+        ZWXt_batch = ZWXt[:, archetypes_idx_best]
+        ZXXt_batch = ZXXt[np.ix_(archetypes_idx_best, archetypes_idx_best)]
+        BXWt_batch_new = B[:, archetypes_idx_best] @ ZWXt_batch.T
+        WXtBt_batch_new = ZWXt_batch @ B[:, archetypes_idx_best].T
+        BXXtBt_batch_new = np.linalg.multi_dot(
+            [B[:, archetypes_idx_best], ZXXt_batch, B[:, archetypes_idx_best].T]
+        )
+        for _ in range(1, max_iter + 1):
+            rss_batch_new, step_size_A = _pgd_like_update_A_inplace(
+                None,
+                A,
+                ZWXt_batch,
+                ZXXt_batch,
+                BXWt_batch_new,
+                WXtBt_batch_new,
+                BXXtBt_batch_new,
+                A_grad,
+                A_new,  # used as temp storage, value is not important
+                pseudo_pgd,
+                step_size_A,
+                max_iter_optimizer,
+                beta,
+                rss_batch,
+            )
+
+            convergence = abs(rss_batch_new - rss_batch) < tol
+            rss_batch = rss_batch_new
+            if convergence:
+                break
+
+    return A, B, None, i, loss_list, convergence
 
 
 def _pgd_like_update_A_inplace(
