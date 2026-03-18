@@ -35,6 +35,7 @@ dependencies = [
     "matplotlib>=3.8",
     "opt_einsum",
     "pykronecker",
+    "networkx",
 ]
 
 [project.urls]
@@ -58,7 +59,6 @@ docs = [
     "scikit-learn",
     "matplotlib",
     "numpy",
-    "networkx",
 ]
 
 [tool.scikit-build]
