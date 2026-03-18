@@ -48,6 +48,17 @@ dev = [
     "pytest",
     "jupyter",
 ]
+docs = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "numpydoc",
+    "myst-nb",
+    "jupyter",
+    "sphinxcontrib-bibtex",
+    "scikit-learn",
+    "matplotlib",
+    "numpy",
+]
 
 [tool.scikit-build]
 wheel.packages = ["archetypes"]
