@@ -87,7 +87,11 @@ class KernelADA(TransformerMixin, BaseEstimator):
     loss_ : list
         The loss at each iteration.
     rss_, reconstruction_error_ : float
-        The residual sum of squares of the fitted data.
+        Unweighted residual sum of squares on the original data (eq. 1 in the paper),
+        computed after the post-processing step.
+    rss_weighted_ : float
+        Weighted residual sum of squares in the transformed space X̃ = WX (eq. 3 in the
+        paper), from the end of Phase 1. Equals rss_ when no weights are given.
 
     References
     ----------
@@ -268,6 +272,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
             B_ = np.full((self.n_archetypes, n_samples), 1 / n_samples, dtype=X.dtype)
             A_ = np.ones((n_samples, self.n_archetypes), dtype=X.dtype)
             best_rss = squared_norm(X - archetypes_)
+            best_rss_weighted = best_rss
             n_iter_ = 0
             loss_ = [
                 best_rss,
@@ -305,6 +310,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
             ZXXt = ZXXt.copy()
 
             best_rss = np.inf
+            best_rss_weighted = np.inf
             for i in range(self.n_init):
                 A, B, _ = self._init_archetypes(X, rng)
 
@@ -326,9 +332,12 @@ class KernelADA(TransformerMixin, BaseEstimator):
                     **method_params,
                 )
 
+                # loss[-1] = unweighted RSS (Phase 3, original data space, eq. 1)
+                # loss[-2] = weighted RSS   (Phase 1, transformed space,   eq. 3)
                 rss = loss[-1]
                 if i == 0 or rss < best_rss:
                     best_rss = rss
+                    best_rss_weighted = loss[-2]
                     A_ = A
                     B_ = B
                     n_iter_ = n_iter
@@ -340,6 +349,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
         self.n_iter_ = n_iter_
         self.loss_ = loss_
         self.rss_ = best_rss
+        self.rss_weighted_ = best_rss_weighted
 
         self.coefficients_ = self.A_
         self.arch_coefficients_ = self.B_
@@ -631,6 +641,9 @@ def _pgd_like_optimize_aa(
         rss_batch = rss_batch_new
         if convergence:
             break
+
+    # Append the final unweighted RSS (original data space, post paper eq. 3 post-processing).
+    loss_list.append(rss_batch)
 
     return A, B, None, n_iter, loss_list, convergence
 
