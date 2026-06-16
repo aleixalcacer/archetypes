@@ -302,8 +302,6 @@ class KernelADA(TransformerMixin, BaseEstimator):
 
             ZXXt = ZXXt.copy()
 
-            W = np.diag(weights)
-
             best_rss = np.inf
             for i in range(self.n_init):
                 A, B, _ = self._init_archetypes(X, rng)
@@ -316,7 +314,7 @@ class KernelADA(TransformerMixin, BaseEstimator):
                     X,
                     A,
                     B,
-                    W,
+                    weights,
                     ZXXt,
                     ZXXt,
                     max_iter=self.max_iter,
@@ -352,12 +350,12 @@ class KernelADA(TransformerMixin, BaseEstimator):
         return self.A_
 
 
-def pgd_fit_transform(X, A, B, W, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params):
+def pgd_fit_transform(X, A, B, weights, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
-        W,
+        weights,
         ZWXt,
         ZXXt,
         max_iter=max_iter,
@@ -371,13 +369,13 @@ def pgd_fit_transform(X, A, B, W, ZWXt, ZXXt, *, max_iter, tol, batch_size, verb
 
 
 def pseudo_pgd_fit_transform(
-    X, A, B, W, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params
+    X, A, B, weights, ZWXt, ZXXt, *, max_iter, tol, batch_size, verbose, **params
 ):
     return _pgd_like_optimize_aa(
         X,
         A,
         B,
-        W,
+        weights,
         ZWXt,
         ZXXt,
         max_iter=max_iter,
@@ -394,7 +392,7 @@ def _pgd_like_optimize_aa(
     X,
     A,
     B,
-    W,
+    weights,  # 1-D sample weights array of shape (n_samples,)
     ZWXt,  # precomputed kernel between W (data to fit) and X (used to compute the archetypes)
     ZXXt,  # precomputed kernel between X and X
     *,
@@ -414,11 +412,18 @@ def _pgd_like_optimize_aa(
         X.shape[0] if batch_size is None else batch_size
     )  # if no batch size is given, use all data
 
+    # Precompute weighted kernel matrices once (diagonal W applied via broadcasting).
+    # KW[i,j]  = ZWXt[i,j] * w[j]  ==  (ZWXt @ diag(w))[i,j]
+    # WKW[i,j] = w[i] * ZXXt[i,j] * w[j]  ==  (diag(w) @ ZXXt @ diag(w))[i,j]
+    w = weights
+    KW = ZWXt * w[None, :]
+    WKW = (w[:, None] * ZXXt) * w[None, :]
+
     # precomputing and memory allocation
     # BX = archetypes
-
-    BXWt = B @ W @ ZWXt.T
-    BXXtBt = np.linalg.multi_dot([B, W, ZXXt, W.T, B.T])
+    Bw = B * w[None, :]
+    BXWt = Bw @ ZWXt.T
+    BXXtBt = Bw @ ZXXt @ Bw.T
 
     # Temporary arrays for updates
     A_grad = np.empty_like(A)
@@ -459,10 +464,10 @@ def _pgd_like_optimize_aa(
 
             idx_batch = np.arange(len(idx))
 
-            # Define the batches
+            # Define the batches (use precomputed weighted kernels, sliced to batch)
             B_batch = B[:, idx]
-            ZWXt_batch = (ZWXt @ W)[:, idx]
-            ZXXt_batch = (W @ ZXXt @ W.T)[np.ix_(idx, idx)]
+            ZWXt_batch = KW[:, idx]
+            ZXXt_batch = WKW[np.ix_(idx, idx)]
 
             # Get the idx of archetypes in the batch
             archetypes_idx_best_batch = B_batch.argmax(axis=1)
@@ -474,12 +479,10 @@ def _pgd_like_optimize_aa(
                         continue
                     archetypes_idx_batch[k] = i
 
-                    B_batch_new = np.zeros_like(B_batch)
-                    B_batch_new[np.arange(B_batch.shape[0]), archetypes_idx_batch] = 1
-
-                    BXWt_batch_new = B_batch_new @ ZWXt_batch.T
-                    WXtBt_batch_new = ZWXt_batch @ B_batch_new.T
-                    BXXtBt_batch_new = np.linalg.multi_dot([B_batch_new, ZXXt_batch, B_batch_new.T])
+                    # B_batch_new is one-hot: use indexing instead of matmul
+                    BXWt_batch_new = ZWXt_batch[:, archetypes_idx_batch].T
+                    WXtBt_batch_new = ZWXt_batch[:, archetypes_idx_batch]
+                    BXXtBt_batch_new = ZXXt_batch[np.ix_(archetypes_idx_batch, archetypes_idx_batch)]
 
                     # Compute A update using new B_batch
                     A_copy = A.copy()
@@ -530,7 +533,8 @@ def _pgd_like_optimize_aa(
         archetypes_idx_best = np.argmax(B, axis=1)
         n_archetypes = B.shape[0]
 
-        ZZt = (B @ W @ ZXXt @ W.T @ B.T).copy()
+        Bw = B * w[None, :]
+        ZZt = (Bw @ ZXXt @ Bw.T).copy()
 
         rss_post = -2 * np.sum(BXXtBt * (ZZt)) + np.sum(BXXtBt * BXXtBt)  # initial rss
 
@@ -569,14 +573,8 @@ def _pgd_like_optimize_aa(
                             continue
                         archetypes_idx_batch[k] = i
 
-                        B_batch_new = np.zeros_like(B_batch)
-                        B_batch_new[np.arange(B_batch.shape[0]), archetypes_idx_batch] = 1
-
-                        BXWt_batch_new = B_batch_new @ ZWXt_batch.T
-                        WXtBt_batch_new = ZWXt_batch @ B_batch_new.T
-                        BXXtBt_batch_new = np.linalg.multi_dot(
-                            [B_batch_new, ZXXt_batch, B_batch_new.T]
-                        )
+                        # B_batch_new is one-hot: use indexing instead of matmul
+                        BXXtBt_batch_new = ZXXt_batch[np.ix_(archetypes_idx_batch, archetypes_idx_batch)]
 
                         rss_batch = -2 * np.sum(BXXtBt_batch_new * (ZZt)) + np.sum(
                             BXXtBt_batch_new * BXXtBt_batch_new
@@ -602,13 +600,14 @@ def _pgd_like_optimize_aa(
         # Recompute A
         rss_batch = np.inf
 
+        # B[:, archetypes_idx_best] is the identity (one archetype per row),
+        # so B @ M @ B.T == M for square M, and B @ V.T == rows of V.T.
+        # The post-processing stage uses raw (unweighted) kernels — preserve that.
         ZWXt_batch = ZWXt[:, archetypes_idx_best]
         ZXXt_batch = ZXXt[np.ix_(archetypes_idx_best, archetypes_idx_best)]
-        BXWt_batch_new = B[:, archetypes_idx_best] @ ZWXt_batch.T
-        WXtBt_batch_new = ZWXt_batch @ B[:, archetypes_idx_best].T
-        BXXtBt_batch_new = np.linalg.multi_dot(
-            [B[:, archetypes_idx_best], ZXXt_batch, B[:, archetypes_idx_best].T]
-        )
+        BXWt_batch_new = ZWXt_batch.T
+        WXtBt_batch_new = ZWXt_batch
+        BXXtBt_batch_new = ZXXt_batch
         for _ in range(1, max_iter + 1):
             rss_batch_new, step_size_A = _pgd_like_update_A_inplace(
                 None,
