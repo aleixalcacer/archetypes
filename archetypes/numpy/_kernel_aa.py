@@ -85,7 +85,11 @@ class KernelAA(TransformerMixin, BaseEstimator):
     loss_ : list
         The loss at each iteration.
     rss_, reconstruction_error_ : float
-        The residual sum of squares of the fitted data.
+        Unweighted residual sum of squares on the original data `‖X − A·B·X‖²`,
+        computed after the post-processing step.
+    rss_weighted_ : float
+        Weighted residual sum of squares in the transformed space X̃ = WX,
+        from the end of Phase 1. Equals rss_ when no weights are given.
 
     References
     ----------
@@ -182,7 +186,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
 
         return A, B, archetypes
 
-    def fit(self, X, y=None, **params):
+    def fit(self, X, y=None, weights=None, **params):
         """
         Compute Archetype Analysis.
 
@@ -194,13 +198,15 @@ class KernelAA(TransformerMixin, BaseEstimator):
             which will cause a memory copy if the given data is not C-contiguous.
         y : Ignored
             Not used, present here for API consistency by convention.
+        weights: np.ndarray, default=None
+            Sample weights.
 
         Returns
         -------
         self : object
             Fitted estimator.
         """
-        self.fit_transform(X, y, **params)
+        self.fit_transform(X, y, weights, **params)
         return self
 
     def transform(self, X):
@@ -222,7 +228,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
         raise NotImplementedError("Transform method is not implemented yet for KernelAA.")
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y=None, weights=None, **params):
         """
         Compute the archetypes and transform X to the archetypal space.
 
@@ -244,12 +250,20 @@ class KernelAA(TransformerMixin, BaseEstimator):
         self._check_params_vs_data(X)
         X = np.ascontiguousarray(X)
 
+        if weights is not None:
+            weights = np.asarray(weights)
+            if weights.ndim != 1 or weights.shape[0] != X.shape[0]:
+                raise ValueError(
+                    f"Weights must be a 1D array of shape (n_samples,), got {weights.shape}."
+                )
+
         if self.n_archetypes == 1:
             n_samples = X.shape[0]
             archetypes_ = np.mean(X, axis=0, keepdims=True)
             B_ = np.full((self.n_archetypes, n_samples), 1 / n_samples, dtype=X.dtype)
             A_ = np.ones((n_samples, self.n_archetypes), dtype=X.dtype)
             best_rss = squared_norm(X - archetypes_)
+            best_rss_weighted = best_rss
             n_iter_ = 0
             loss_ = [
                 best_rss,
@@ -288,6 +302,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
             ZXXtt = ZWWt.copy()
 
             best_rss = np.inf
+            best_rss_weighted = np.inf
             for i in range(self.n_init):
                 A, B, archetypes = self._init_archetypes(X, rng)
 
@@ -303,15 +318,20 @@ class KernelAA(TransformerMixin, BaseEstimator):
                     ZWWt,
                     ZWXt,
                     ZXXtt,
+                    weights=weights,
                     max_iter=self.max_iter,
                     tol=self.tol,
                     verbose=self.verbose,
                     **method_params,
                 )
 
+                # When weights are given: loss[-1] = unweighted RSS (Phase 2),
+                #                         loss[-2] = weighted RSS   (Phase 1).
+                # When no weights:        loss[-1] = RSS (single phase).
                 rss = loss[-1]
                 if i == 0 or rss < best_rss:
                     best_rss = rss
+                    best_rss_weighted = loss[-2] if weights is not None else rss
                     A_ = A
                     B_ = B
                     archetypes_ = archetypes
@@ -324,6 +344,7 @@ class KernelAA(TransformerMixin, BaseEstimator):
         self.n_iter_ = n_iter_
         self.loss_ = loss_
         self.rss_ = best_rss
+        self.rss_weighted_ = best_rss_weighted
 
         self.coefficients_ = self.A_
         self.arch_coefficients_ = self.B_
@@ -358,7 +379,7 @@ def pgd_transform(X, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, **params
     return A
 
 
-def pgd_fit_transform(X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, verbose, **params):
+def pgd_fit_transform(X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, weights=None, max_iter, tol, verbose, **params):
     return _pgd_like_optimize_aa(
         X,
         A,
@@ -367,6 +388,7 @@ def pgd_fit_transform(X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, v
         ZWWt,
         ZWXt,
         ZXXt,
+        weights=weights,
         max_iter=max_iter,
         tol=tol,
         verbose=verbose,
@@ -399,7 +421,7 @@ def pseudo_pgd_transform(X, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, *
 
 
 def pseudo_pgd_fit_transform(
-    X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, max_iter, tol, verbose, **params
+    X, A, B, archetypes, ZWWt, ZWXt, ZXXt, *, weights=None, max_iter, tol, verbose, **params
 ):
     return _pgd_like_optimize_aa(
         X,
@@ -409,6 +431,7 @@ def pseudo_pgd_fit_transform(
         ZWWt,
         ZWXt,
         ZXXt,
+        weights=weights,
         max_iter=max_iter,
         tol=tol,
         verbose=verbose,
@@ -427,6 +450,7 @@ def _pgd_like_optimize_aa(
     ZWXt,
     ZXXt,
     *,
+    weights=None,
     max_iter,
     tol,
     verbose=False,
@@ -437,16 +461,26 @@ def _pgd_like_optimize_aa(
     beta=0.5,
     **params,
 ):
+    # Phase 1: if weights are given, run on the weighted kernels K̃ = diag(w)·K·diag(w)
+    if weights is not None:
+        w = weights
+        ZWWt_fit = w[:, None] * ZWWt * w[None, :]
+        ZWXt_fit = w[:, None] * ZWXt * w[None, :]
+        ZXXt_fit = w[:, None] * ZXXt * w[None, :]
+    else:
+        ZWWt_fit = ZWWt
+        ZWXt_fit = ZWXt
+        ZXXt_fit = ZXXt
 
     # precomputing and memory allocation
     BX = archetypes
 
-    BXWt = B @ ZWXt.T
-    BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T])
+    BXWt = B @ ZWXt_fit.T
+    BXXtBt = np.linalg.multi_dot([B, ZXXt_fit, B.T])
 
     # Gradients
-    AtWXt = A.T @ ZWXt
-    WXtBt = ZWXt @ B.T
+    AtWXt = A.T @ ZWXt_fit
+    WXtBt = ZWXt_fit @ B.T
 
     A_grad = np.empty_like(A)
     B_grad = np.empty_like(B)
@@ -454,7 +488,7 @@ def _pgd_like_optimize_aa(
     B_new = np.empty_like(B)
 
     rss = np.trace(
-        ZWWt - 2 * np.linalg.multi_dot([A, BXWt]) + np.linalg.multi_dot([A, BXXtBt, A.T])
+        ZWWt_fit - 2 * np.linalg.multi_dot([A, BXWt]) + np.linalg.multi_dot([A, BXXtBt, A.T])
     )
 
     loss_list = [
@@ -468,9 +502,9 @@ def _pgd_like_optimize_aa(
         rss, step_size_A = _pgd_like_update_A_inplace(
             X,
             A,
-            ZWWt,
-            ZWXt,
-            ZXXt,
+            ZWWt_fit,
+            ZWXt_fit,
+            ZXXt_fit,
             BXWt,
             WXtBt,
             BXXtBt,
@@ -490,9 +524,9 @@ def _pgd_like_optimize_aa(
                 A,
                 B,
                 BX,
-                ZWWt,
-                ZWXt,
-                ZXXt,
+                ZWWt_fit,
+                ZWXt_fit,
+                ZXXt_fit,
                 BXWt,
                 WXtBt,
                 BXXtBt,
@@ -512,6 +546,40 @@ def _pgd_like_optimize_aa(
             verbose_print_rss(max_iter, rss, i)
         if convergence:
             break
+
+    # Phase 2 (weighted case only): recompute A on the unweighted kernel with B fixed.
+    # This gives the final unweighted RSS ‖X − A·B·X‖² (original data space).
+    if weights is not None:
+        BXWt = B @ ZWXt.T
+        BXXtBt = np.linalg.multi_dot([B, ZXXt, B.T])
+        WXtBt = ZWXt @ B.T
+        AtWXt = A.T @ ZWXt
+
+        rss_unweighted = np.inf
+        for _ in range(1, max_iter + 1):
+            rss_new, step_size_A = _pgd_like_update_A_inplace(
+                X,
+                A,
+                ZWWt,
+                ZWXt,
+                ZXXt,
+                BXWt,
+                WXtBt,
+                BXXtBt,
+                AtWXt,
+                A_grad,
+                A_new,
+                pseudo_pgd,
+                step_size_A,
+                max_iter_optimizer,
+                beta,
+                rss_unweighted,
+            )
+            convergence = abs(rss_new - rss_unweighted) < tol
+            rss_unweighted = rss_new
+            if convergence:
+                break
+        loss_list.append(rss_unweighted)
 
     return A, B, archetypes, i, loss_list, convergence
 
