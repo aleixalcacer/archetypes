@@ -110,9 +110,11 @@ class KernelADA(TransformerMixin, BaseEstimator):
             None,
         ],
         "init_params": [dict, None],
+        "n_init": [Interval(Integral, 1, None, closed="left")],
         "save_init": [bool],
         "method": [StrOptions({"pgd", "pseudo_pgd"})],
         "method_params": [dict, None],
+        "batch_size": [Interval(Integral, 1, None, closed="left"), None],
         "random_state": ["random_state"],
         "verbose": ["verbose"],
     }
@@ -444,7 +446,7 @@ def _pgd_like_optimize_aa(
 
     # Allocate memory for B batch copies
 
-    for i in range(1, max_iter + 1):  # main loop over iterations
+    for n_iter in range(1, max_iter + 1):  # main loop over iterations
         r = 0
         while r < B.shape[1]:
             # Define the batch indexes, ensuring archetypes are included
@@ -524,8 +526,8 @@ def _pgd_like_optimize_aa(
 
         convergence = abs(loss_list[-1] - rss) < tol
         loss_list.append(rss)
-        if verbose and i % 10 == 0:
-            verbose_print_rss(max_iter, rss, i)
+        if verbose and n_iter % 10 == 0:
+            verbose_print_rss(max_iter, rss, n_iter)
         if convergence:
             break
 
@@ -631,7 +633,7 @@ def _pgd_like_optimize_aa(
             if convergence:
                 break
 
-    return A, B, None, i, loss_list, convergence
+    return A, B, None, n_iter, loss_list, convergence
 
 
 def _pgd_like_update_A_inplace(
