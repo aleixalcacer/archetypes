@@ -531,107 +531,106 @@ def _pgd_like_optimize_aa(
         if convergence:
             break
 
-        # Post processing, if weights are given
-        archetypes_idx_best = np.argmax(B, axis=1)
-        n_archetypes = B.shape[0]
+    # Post processing, if weights are given (runs once after the main loop)
+    archetypes_idx_best = np.argmax(B, axis=1)
+    n_archetypes = B.shape[0]
 
-        Bw = B * w[None, :]
-        ZZt = (Bw @ ZXXt @ Bw.T).copy()
+    Bw = B * w[None, :]
+    ZZt = (Bw @ ZXXt @ Bw.T).copy()
 
-        rss_post = -2 * np.sum(BXXtBt * (ZZt)) + np.sum(BXXtBt * BXXtBt)  # initial rss
+    rss_post = -2 * np.sum(BXXtBt * (ZZt)) + np.sum(BXXtBt * BXXtBt)  # initial rss
 
-        for i in range(1, max_iter + 1):  # main loop over iterations
-            r = 0
-            while r < B.shape[1]:
-                # Define the batch indexes, ensuring archetypes are included
-                r_max = min(r + batch_size, B.shape[1])
-                idx = np.arange(r, r_max)
+    for i in range(1, max_iter + 1):
+        r = 0
+        while r < B.shape[1]:
+            # Define the batch indexes, ensuring archetypes are included
+            r_max = min(r + batch_size, B.shape[1])
+            idx = np.arange(r, r_max)
 
-                # Ensure all archetypes are included in the batch, but keeping batch size
-                missing_archetypes = np.setdiff1d(archetypes_idx_best, idx)
-                n_missing = len(missing_archetypes)
+            # Ensure all archetypes are included in the batch, but keeping batch size
+            missing_archetypes = np.setdiff1d(archetypes_idx_best, idx)
+            n_missing = len(missing_archetypes)
 
-                # Get idx without archetypes indexes
-                idx_wo_archetypes = np.setdiff1d(idx, archetypes_idx_best)
+            # Get idx without archetypes indexes
+            idx_wo_archetypes = np.setdiff1d(idx, archetypes_idx_best)
 
-                idx = idx_wo_archetypes[: (batch_size - n_archetypes)]
-                idx = np.concatenate([idx, archetypes_idx_best])
-                r += batch_size - n_missing
+            idx = idx_wo_archetypes[: (batch_size - n_archetypes)]
+            idx = np.concatenate([idx, archetypes_idx_best])
+            r += batch_size - n_missing
 
-                idx_batch = np.arange(len(idx))
+            idx_batch = np.arange(len(idx))
 
-                # Define the batches
-                B_batch = B[:, idx]
-                ZWXt_batch = (ZWXt)[:, idx]
-                ZXXt_batch = (ZXXt)[np.ix_(idx, idx)]
+            # Define the batches
+            B_batch = B[:, idx]
+            ZWXt_batch = (ZWXt)[:, idx]
+            ZXXt_batch = (ZXXt)[np.ix_(idx, idx)]
 
-                # Get the idx of archetypes in the batch
-                archetypes_idx_best_batch = B_batch.argmax(axis=1)
-                # Check all possible archetype updates in the batch
-                for k in range(n_archetypes):
-                    archetypes_idx_batch = archetypes_idx_best_batch.copy()
-                    for i in idx_batch:
-                        if i in archetypes_idx_best_batch:
-                            continue
-                        archetypes_idx_batch[k] = i
+            # Get the idx of archetypes in the batch
+            archetypes_idx_best_batch = B_batch.argmax(axis=1)
+            # Check all possible archetype updates in the batch
+            for k in range(n_archetypes):
+                archetypes_idx_batch = archetypes_idx_best_batch.copy()
+                for i in idx_batch:
+                    if i in archetypes_idx_best_batch:
+                        continue
+                    archetypes_idx_batch[k] = i
 
-                        # B_batch_new is one-hot: use indexing instead of matmul
-                        BXXtBt_batch_new = ZXXt_batch[np.ix_(archetypes_idx_batch, archetypes_idx_batch)]
+                    # B_batch_new is one-hot: use indexing instead of matmul
+                    BXXtBt_batch_new = ZXXt_batch[np.ix_(archetypes_idx_batch, archetypes_idx_batch)]
 
-                        rss_batch = -2 * np.sum(BXXtBt_batch_new * (ZZt)) + np.sum(
-                            BXXtBt_batch_new * BXXtBt_batch_new
-                        )
+                    rss_batch = -2 * np.sum(BXXtBt_batch_new * (ZZt)) + np.sum(
+                        BXXtBt_batch_new * BXXtBt_batch_new
+                    )
 
-                        if rss_batch < rss_post:
-                            rss_post = rss_batch
-                            archetypes_idx_best_batch = archetypes_idx_batch.copy()
-                            archetypes_idx_best = idx[archetypes_idx_best_batch]
+                    if rss_batch < rss_post:
+                        rss_post = rss_batch
+                        archetypes_idx_best_batch = archetypes_idx_batch.copy()
+                        archetypes_idx_best = idx[archetypes_idx_best_batch]
 
-                            B[:] = 0
-                            B[np.arange(B.shape[0]), archetypes_idx_best] = 1
+                        B[:] = 0
+                        B[np.arange(B.shape[0]), archetypes_idx_best] = 1
+                        # A is recomputed from scratch below; no copy needed here
 
-                            np.copyto(A, A_copy)
+        convergence = abs(loss_list[-1] - rss_post) < tol
+        # loss_list.append(rss_post)
+        if verbose and i % 10 == 0:
+            verbose_print_rss(max_iter, rss_post, i)
+        if convergence:
+            break
 
-            convergence = abs(loss_list[-1] - rss_post) < tol
-            # loss_list.append(rss_post)
-            if verbose and i % 10 == 0:
-                verbose_print_rss(max_iter, rss_post, i)
-            if convergence:
-                break
+    # Recompute A to convergence given the final B
+    rss_batch = np.inf
 
-        # Recompute A
-        rss_batch = np.inf
+    # B[:, archetypes_idx_best] is the identity (one archetype per row),
+    # so B @ M @ B.T == M for square M, and B @ V.T == rows of V.T.
+    # The post-processing stage uses raw (unweighted) kernels — preserve that.
+    ZWXt_batch = ZWXt[:, archetypes_idx_best]
+    ZXXt_batch = ZXXt[np.ix_(archetypes_idx_best, archetypes_idx_best)]
+    BXWt_batch_new = ZWXt_batch.T
+    WXtBt_batch_new = ZWXt_batch
+    BXXtBt_batch_new = ZXXt_batch
+    for _ in range(1, max_iter + 1):
+        rss_batch_new, step_size_A = _pgd_like_update_A_inplace(
+            None,
+            A,
+            ZWXt_batch,
+            ZXXt_batch,
+            BXWt_batch_new,
+            WXtBt_batch_new,
+            BXXtBt_batch_new,
+            A_grad,
+            A_new,  # used as temp storage, value is not important
+            pseudo_pgd,
+            step_size_A,
+            max_iter_optimizer,
+            beta,
+            rss_batch,
+        )
 
-        # B[:, archetypes_idx_best] is the identity (one archetype per row),
-        # so B @ M @ B.T == M for square M, and B @ V.T == rows of V.T.
-        # The post-processing stage uses raw (unweighted) kernels — preserve that.
-        ZWXt_batch = ZWXt[:, archetypes_idx_best]
-        ZXXt_batch = ZXXt[np.ix_(archetypes_idx_best, archetypes_idx_best)]
-        BXWt_batch_new = ZWXt_batch.T
-        WXtBt_batch_new = ZWXt_batch
-        BXXtBt_batch_new = ZXXt_batch
-        for _ in range(1, max_iter + 1):
-            rss_batch_new, step_size_A = _pgd_like_update_A_inplace(
-                None,
-                A,
-                ZWXt_batch,
-                ZXXt_batch,
-                BXWt_batch_new,
-                WXtBt_batch_new,
-                BXXtBt_batch_new,
-                A_grad,
-                A_new,  # used as temp storage, value is not important
-                pseudo_pgd,
-                step_size_A,
-                max_iter_optimizer,
-                beta,
-                rss_batch,
-            )
-
-            convergence = abs(rss_batch_new - rss_batch) < tol
-            rss_batch = rss_batch_new
-            if convergence:
-                break
+        convergence = abs(rss_batch_new - rss_batch) < tol
+        rss_batch = rss_batch_new
+        if convergence:
+            break
 
     return A, B, None, n_iter, loss_list, convergence
 
